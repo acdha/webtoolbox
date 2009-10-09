@@ -24,10 +24,14 @@ class URLFetcher(object):
 
     ioloop    = None
 
-    def __init__(self):
+    def __init__(self, max_clients=10, max_connections=6):
         from tornado import ioloop, httpclient
 
-        self.http_client = httpclient.AsyncHTTPClient(max_simultaneous_connections=6)
+        self.http_client = httpclient.AsyncHTTPClient(
+            max_simultaneous_connections=max_connections,
+            max_clients=max_clients,
+        )
+        
         self.ioloop = ioloop.IOLoop.instance()
         
     def run(self):
@@ -65,9 +69,11 @@ def main(argv=None):
         sys.exit(99)
 
     cmdparser = optparse.OptionParser(__doc__.strip(), version="tornado-bench %s" % __version__)
-    cmdparser.add_option("--verbosity", "-v", "--verbose", default=0, type="int", action="count", help="Display more progress information")
+    cmdparser.add_option("--verbosity", "-v", "--verbose", action="count", help="Display more progress information")
     cmdparser.add_option("--save-bad-urls", type="string", help="Save all URLs which returned errors to the provided filename")
     cmdparser.add_option("--save-good-urls", type="string", help="Save all URLs which did not return errors to the provided filename")
+    cmdparser.add_option("--max-connections", type="int", default=8, help="Set the number of simultaneous connections")
+    cmdparser.add_option("--max-clients", type="int", default=10, help="Set the number of simultaneous clients")
     (options, args) = cmdparser.parse_args()
 
     if not args:
@@ -85,7 +91,7 @@ def main(argv=None):
         level  = log_level
     )
     
-    fetcher = URLFetcher()
+    fetcher = URLFetcher(max_connections=options.max_connections, max_clients=options.max_clients)
 
     for arg in args:
         # Is it a file?
@@ -95,14 +101,15 @@ def main(argv=None):
             # TODO: Validate URLs before adding them
             fetcher.load(arg)
 
-    start_time = time.clock()
+    start_time = time.time()
     fetcher.run()
-    end_time = time.clock()
+    elapsed = time.time() - start_time
     
-    logging.info("Retrieved %d URLs in %s seconds (%d errors)", 
-        fetcher.total, 
-        end_time - start_time, 
-        len(fetcher.bad_urls)
+    print "Retrieved {total} URLs ({bad} errors) in {elapsed:0.2f} seconds ({rate:0.1f} req/s)".format(
+        total=fetcher.total, 
+        elapsed=elapsed, 
+        rate=fetcher.total / elapsed,
+        bad=len(fetcher.bad_urls)
     )
     
     if options.save_bad_urls:
