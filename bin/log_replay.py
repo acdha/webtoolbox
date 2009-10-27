@@ -15,7 +15,6 @@ import urllib
 import datetime
 from collections import deque
 from functools import partial
-from itertools import chain
 
 __version__ = "0.1"
 
@@ -36,6 +35,9 @@ class LogReplayer(object):
     
     # FIXME: This is currently based on IIS log lines like this:
     # date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes cs(User-Agent) cs(Referer) 
+    # This should be refactored into a module, include support for other
+    # webservers and - ideally - autodetect the flavor and even validate the IIS
+    # regexp against the embedded header IIS puts in its log files.
     
     LOG_RE = re.compile("""
         ^(?P<year>\d{4})\-(?P<month>\d{2})\-(?P<day>\d{2})\s+
@@ -79,7 +81,8 @@ class LogReplayer(object):
                 f = zipfile.ZipFile(filename, mode="r").open()
             else:
                 f = file(f)
-                
+            
+            # TODO: In conjunction with refactoring log reading, the time logic should move in the main code
             # Reset our virtual clock based on the first entry in the log file:
             base_time = None
             current_time = None
@@ -105,13 +108,13 @@ class LogReplayer(object):
                 
                 delta_time = l_time - base_time
                 if delta_time.seconds >= 1:
-                    logging.debug("We're ahead of schedule - sleeping %s seconds", delta_time)
+                    logging.info("Sleeping until simulated time %s", l_time)
+                    # … and we're throwing all of that nice asynchronous goodness away for a
+                    # little while:
                     time.sleep(delta_time.seconds / self.time_factor)
                     
                 current_time = l_time
                 
-                logging.debug("Simulated current time: %s", current_time)
-
                 url = m.group("cs_uri_stem")
                 if m.group("cs_uri_query") != "-":
                     url += "?" + m.group("cs_uri_query")
@@ -162,7 +165,7 @@ def main(argv=None):
     try:
         import tornado
     except ImportError, e:
-        logging.critical("Couldn't import Tornado: %s. Try `easy_install tornado`", e)
+        logging.critical("Couldn't import Tornado. Try installing it from tornadoweb.org.", e)
         sys.exit(99)
 
     cmdparser = optparse.OptionParser(__doc__.strip(), version="log_replay %s" % __version__)
