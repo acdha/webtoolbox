@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-tornado_bench.py
-
 High-performance server-crushing tool
+
+Usage:
+
+tornado-bench.py 
 """
 import optparse
 import logging

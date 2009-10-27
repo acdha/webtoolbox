@@ -2,6 +2,15 @@
 # encoding: utf-8
 """
 Replays Apache or IIS log files against other servers
+
+Usage:
+
+%prog --server=mytestserver log1 [log2.gz log3.zip...]
+
+Log files can be compressed with gzip or zip - they'll be silently
+decompressed as needed. 
+
+BUG: Currently only one IIS log flavor is supported!
 """
 import optparse
 import logging
@@ -107,6 +116,7 @@ class LogReplayer(object):
                     base_time = current_time = l_time
                 
                 delta_time = l_time - base_time
+                # TODO: The max drift should be a command-line option:
                 if delta_time.seconds >= 1:
                     logging.info("Sleeping until simulated time %s", l_time)
                     # … and we're throwing all of that nice asynchronous goodness away for a

@@ -2,7 +2,12 @@
 # encoding: utf-8
 
 """
-    Spiders one or more URIs, analyzing linked pages and resources
+Spiders one or more URIs, analyzing linked pages and resources
+
+Usage:
+
+    %prog http://example.com
+
 """
 
 
@@ -310,6 +315,9 @@ def main():
     (options, uris) = parser.parse_args()
 
     configure_logging(options)
+    
+    if not uris:
+        parser.error("You must provide at least one URL to start spidering")
 
     if not isinstance(options.report_file, file):
         options.report_file = file(options.report_file, "w")
