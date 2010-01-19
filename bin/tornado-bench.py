@@ -5,7 +5,7 @@ High-performance server-crushing tool
 
 Usage:
 
-tornado-bench.py 
+tornado-bench.py url_or_file [url_or_file2 …]
 """
 import optparse
 import logging
@@ -42,7 +42,7 @@ class URLFetcher(object):
     def load(self, urls):
         """Queue up a list of URLs to retrieve"""
         if not isinstance(urls, list):
-            urls = list(urls)
+            urls = [urls]
 
         self.total += len(urls)
         for u in urls:
