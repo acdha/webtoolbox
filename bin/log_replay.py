@@ -8,7 +8,7 @@ Usage:
 %prog --server=mytestserver log1 [log2.gz log3.zip...]
 
 Log files can be compressed with gzip or zip - they'll be silently
-decompressed as needed. 
+decompressed as needed.
 
 BUG: Currently only one IIS log flavor is supported!
 """
@@ -27,11 +27,11 @@ from functools import partial
 
 __version__ = "0.1"
 
-class LogReplayer(object):    
+class LogReplayer(object):
     total          = 0
     completed      = 0
     errors         = 0
-    
+
     urls           = None
     good_urls      = deque()
     bad_urls       = deque()
@@ -39,15 +39,15 @@ class LogReplayer(object):
     ioloop         = None
 
     start_time     = None
-    
+
     _log_generator = None
-    
+
     # FIXME: This is currently based on IIS log lines like this:
-    # date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes cs(User-Agent) cs(Referer) 
+    # date time c-ip cs-username s-ip s-port cs-method cs-uri-stem cs-uri-query sc-status sc-bytes cs-bytes cs(User-Agent) cs(Referer)
     # This should be refactored into a module, include support for other
     # webservers and - ideally - autodetect the flavor and even validate the IIS
     # regexp against the embedded header IIS puts in its log files.
-    
+
     LOG_RE = re.compile("""
         ^(?P<year>\d{4})\-(?P<month>\d{2})\-(?P<day>\d{2})\s+
         (?P<hour>\d{2})\:(?P<minute>\d{2})\:(?P<second>\d{2})\s+
@@ -73,12 +73,12 @@ class LogReplayer(object):
             max_simultaneous_connections=max_connections,
             max_clients=max_clients,
         )
-        
+
         self.ioloop = ioloop.IOLoop.instance()
-        
+
         if not server.startswith("http://"):
             server = "http://%s" % server
-            
+
         self.server = server
         self.time_factor = time_factor
 
@@ -90,10 +90,9 @@ class LogReplayer(object):
                 f = zipfile.ZipFile(filename, mode="r").open()
             else:
                 f = file(f)
-            
+
             # TODO: In conjunction with refactoring log reading, the time logic should move in the main code
             # Reset our virtual clock based on the first entry in the log file:
-            base_time = None
             current_time = None
 
             for l in f:
@@ -108,37 +107,37 @@ class LogReplayer(object):
                     int(m.group("month")),
                     int(m.group("day")),
                     int(m.group("hour")),
-                    int(m.group("minute")),                    
+                    int(m.group("minute")),
                     int(m.group("second"))
                 )
-                
-                if not base_time:
-                    base_time = current_time = l_time
-                
-                delta_time = l_time - base_time
+
+                if not current_time:
+                    current_time = l_time
+
+                delta_time = l_time - current_time
                 # TODO: The max drift should be a command-line option:
                 if delta_time.seconds >= 1:
                     logging.info("Sleeping until simulated time %s", l_time)
                     # … and we're throwing all of that nice asynchronous goodness away for a
                     # little while:
                     time.sleep(delta_time.seconds / self.time_factor)
-                    
+
                 current_time = l_time
-                
+
                 url = m.group("cs_uri_stem")
                 if m.group("cs_uri_query") != "-":
                     url += "?" + m.group("cs_uri_query")
-                
+
                 yield urllib.basejoin(self.server, url), int(m.group("sc_status"))
 
     def parse_next_line(self):
         if not self._log_generator:
             self._log_generator = self.get_log_generator()
-            
+
         return self._log_generator.next()
 
     def load_next_url(self):
-        
+
         try:
             url, status_code = self.parse_next_line()
 
@@ -146,14 +145,14 @@ class LogReplayer(object):
 
             self.total += 1
 
-            self.http_client.fetch(url, 
+            self.http_client.fetch(url,
                 partial(self.response_handler, status_code=status_code)
             )
         except StopIteration:
             self.elapsed = time.time() - self.start_time
             logging.debug("Processed all %d URLs; stopping ioloop", self.total)
             self.ioloop.stop()
-        
+
     def run(self):
         self.start_time = time.time()
 
@@ -162,11 +161,11 @@ class LogReplayer(object):
 
     def response_handler(self, response, status_code):
         url = response.request.url
-        
+
         if response.code != status_code:
             logging.warning("URL %s returned %s, not expected %s", url, response.code, status_code)
             self.errors += 1
-    
+
         self.completed += 1
 
         self.load_next_url()
@@ -203,24 +202,24 @@ def main(argv=None):
         format = "%(asctime)s [%(levelname)s]: %(message)s",
         level  = log_level
     )
-    
+
     replayer = LogReplayer(server=options.server, max_connections=options.max_connections, max_clients=options.max_clients, time_factor=options.factor)
 
     for arg in args:
         if not os.path.exists(arg):
             cmdparser.error("%s doesn't exist" % arg)
-            
+
     replayer.log_files = args
 
     replayer.run()
-    
+
     print "Replayed {total} URLs ({bad} errors) in {elapsed:0.2f} seconds ({rate:0.1f} req/s)".format(
-        total=replayer.total, 
-        elapsed=replayer.elapsed, 
+        total=replayer.total,
+        elapsed=replayer.elapsed,
         rate=replayer.total / replayer.elapsed,
         bad=replayer.errors
     )
-    
+
 
 if __name__ == "__main__":
     sys.exit(main())
