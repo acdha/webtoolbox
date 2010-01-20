@@ -292,22 +292,22 @@ def configure_logging(options):
     root_logger.name = "red_spider"
 
     if options.verbosity > 1:
-        console_log_level = logging.DEBUG
+        log_level = logging.DEBUG
     elif options.verbosity > 0:
-        console_log_level = logging.INFO
+        log_level = logging.INFO
     else:
-        console_log_level = logging.WARN
+        log_level = logging.WARN
 
     std_formatter = logging.Formatter("[%(name)s] [%(levelname)s]: %(message)s")
 
     console_log = logging.StreamHandler(sys.stderr)
-    console_log.setLevel(console_log_level)
+    console_log.setLevel(log_level)
     console_log.setFormatter(std_formatter)
     root_logger.addHandler(console_log)
 
     if options.log_file:
         log_file = logging.FileHandler(options.log_file)
-        log_file.setLevel(logging.DEBUG)
+        log_file.setLevel(log_level)
         log_file.setFormatter(std_formatter)
         root_logger.addHandler(log_file)
 
