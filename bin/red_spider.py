@@ -198,7 +198,7 @@ class REDSpider(object):
             # Avoid HTML validation for pages which didn't load correctly. RED normally
             # reports an error in this case so we'll leave the general server
             # failure message in the report but avoid further reporting
-            if red.res_complete and self.validate_html:
+            if red.res_complete and self.validate_html and red.parsed_hdrs['content-type'][0] == 'text/html':
                 self.report_tidy_messages(uri, html_body.content)
 
             errs = not red.res_complete or any([ m for m in red.messages if m.level in ['error', 'bad']])
@@ -230,9 +230,12 @@ class REDSpider(object):
 
     def report_red_message(self, msg, uri):
         """Unpacks a message as returned in ResourceExpertDroid.messages"""
-
+        
         title   = self.get_loc(msg.summary) % msg.vars
         details = self.get_loc(msg.text) % msg.vars
+
+        if title.startswith("The resource last changed"):
+            return
 
         self.report.add(uri=uri, category=msg.category, severity=msg.level, title=title, details=details)
 
