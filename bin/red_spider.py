@@ -82,8 +82,6 @@ class SpiderReport(object):
             tgt['details'] = details
 
         tgt['uris'].add(uri)
-        
-        logging.debug("Added %s %s message for %s: %s", category, severity, uri, title)
 
     def save(self, format="html", output=sys.stdout):
         if format == "html":
@@ -100,7 +98,7 @@ class SpiderReport(object):
             return """<a href="%s">%s</a>""" % (url, title)
 
         # TODO: Switch to a templating system - but which one?
-        template = open(os.path.join(os.path.dirname(__file__),"..", "lib", "red_spider_template.html"))
+        template = open(os.path.join(os.path.dirname(__file__), "..", "lib", "red_spider_template.html"))
 
         for line in template:
             if "GENERATED_CONTENT" in line:
@@ -145,7 +143,8 @@ class SpiderReport(object):
 
     def generate_text(self, output):
         for level in self.REPORT_ORDER:
-            if not level in self.messages: continue
+            if not level in self.messages:
+                continue
 
             print >> output, "%s:" % self.SEVERITY_LEVELS[level]
             categories = self.messages[level]
@@ -169,13 +168,13 @@ class REDSpider(object):
     skip_link_re = re.compile("^$") # URLs which match won't be spidered
 
     def __init__(self, uris, language="en", validate_html=False, skip_media=False, skip_resources=False):
-        self.allowed_hosts  = [ urlparse(u)[1] for u in uris ]
+        self.allowed_hosts  = [urlparse(u)[1] for u in uris]
         self.language       = language
         self.skip_media     = skip_media
         self.skip_resources = skip_resources
         self.uris           = uris
         self.validate_html  = validate_html
-        
+
         self.report = SpiderReport()
 
     def run(self):
@@ -208,7 +207,7 @@ class REDSpider(object):
                 logging.warn("Found problems in: %s", uri)
             else:
                 logging.info("Processed page: %s", uri)
-            
+
 
         assert len(self.uris) <= len(self.pages)
 
@@ -224,7 +223,7 @@ class REDSpider(object):
 
     def report_tidy_messages(self, uri, html):
         (cleaned_html, warnings) = tidylib.tidy_document(html)
-        logging.debug("%s: tidy messages: %s" % (uri, html))
+
         for warn_match in self.tidy_re.finditer(warnings):
             sev = "error" if warn_match.group("level").lower() == "error" else "warning"
             self.report.add(severity=sev, category="HTML", title=warn_match.group("message"), uri=uri)
@@ -242,17 +241,23 @@ class REDSpider(object):
         return red_dict.get(self.language, red_dict['en'])
 
     def process_link(self, link, tag, title):
-        if urlparse(link)[1] not in self.allowed_hosts:
+        link_parts = urlparse(link)
+
+        if link_parts.netloc and not link_parts.netloc in self.allowed_hosts:
             logging.debug("Skipping external resource: %s", link)
             return
-            
+
         if self.skip_link_re.match(link):
             logging.debug("Link matched skip_link_re - skipping %s", link)
             return
-            
+
         if tag.lower() != tag:
             logging.warn("Mismatch tag case: %s %s", tag, link)
             sys.exit(1)
+
+        if not link_parts.scheme.startswith("http"):
+            logging.debug("Skipping non-HTTP link: %s", link)
+            return
 
         if tag in ['a', 'frame', 'iframe']:
             if not link in self.pages:
@@ -272,6 +277,7 @@ def save_uri_list(fn, data):
     f.write("\n")
     f.close()
 
+
 def configure_logging(options):
     # One of our imports must be initializing because logging.basicConfig() does
     # nothing if called in main(). We'll reset logging and configure it correctly:
@@ -282,19 +288,28 @@ def configure_logging(options):
         root_logger.removeHandler(handler)
         handler.close()
 
-    if options.log_file:
-        handler = logging.FileHandler(options.log_file, "a")
-    else:
-        handler = logging.StreamHandler()
-
-    handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-
-    root_logger.addHandler(handler)
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.name = "red_spider"
 
     if options.verbosity > 1:
-        root_logger.setLevel(logging.DEBUG)
-    elif options.verbosity:
-        root_logger.setLevel(logging.INFO)
+        console_log_level = logging.DEBUG
+    elif options.verbosity > 0:
+        console_log_level = logging.INFO
+    else:
+        console_log_level = logging.WARN
+
+    std_formatter = logging.Formatter("[%(name)s] [%(levelname)s]: %(message)s")
+
+    console_log = logging.StreamHandler(sys.stderr)
+    console_log.setLevel(console_log_level)
+    console_log.setFormatter(std_formatter)
+    root_logger.addHandler(console_log)
+
+    if options.log_file:
+        log_file = logging.FileHandler(options.log_file)
+        log_file.setLevel(logging.DEBUG)
+        log_file.setFormatter(std_formatter)
+        root_logger.addHandler(log_file)
 
 
 def main():
@@ -305,7 +320,7 @@ def main():
     parser.add_option("--validate-html", action="store_true", default=False, help="Validate HTML using tidylib")
     parser.add_option("--skip-media", action="store_true", default=False, help="Skip media files: <img>, <object>, etc.")
     parser.add_option("--skip-resources", action="store_true", default=False, help="Skip resources: <script>, <link>")
-    parser.add_option("--skip-link-re", type="string", help="Skip links whose URL matches the specified regular expression")    
+    parser.add_option("--skip-link-re", type="string", help="Skip links whose URL matches the specified regular expression")
     parser.add_option("--save-page-list", dest="page_list", help='Save a list of URLs for HTML pages in the specified file')
     parser.add_option("--save-resource-list", dest="resource_list", help='Save a list of URLs for pages resources in the specified file')
     parser.add_option("--language", default="en", help="Report using a different language than '%default'")
@@ -315,7 +330,7 @@ def main():
     (options, uris) = parser.parse_args()
 
     configure_logging(options)
-    
+
     if not uris:
         parser.error("You must provide at least one URL to start spidering")
 
@@ -327,19 +342,19 @@ def main():
         options.validate_html = False
 
 
-    rs = REDSpider(uris, 
-        validate_html=options.validate_html, 
-        skip_media=options.skip_media, 
-        skip_resources=options.skip_resources, 
+    rs = REDSpider(uris,
+        validate_html=options.validate_html,
+        skip_media=options.skip_media,
+        skip_resources=options.skip_resources,
     )
-    
+
     if options.skip_link_re:
         i = options.skip_link_re
 
         if not i[0] == "^":
             i = r"^.*%s" % i
             logging.warn("Corrected unanchored skip_link_re to: %s", i)
-        
+
         rs.skip_link_re = re.compile(i, re.IGNORECASE)
 
     rs.run()
