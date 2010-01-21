@@ -126,7 +126,7 @@ class SpiderReport(object):
                         <tbody>
                 """ % " ".join(map(escape, [level, category]))
 
-                for summary, data in summaries.items():
+                for summary, data in sorted(summaries.items(), key=lambda i: (i[0].lower(), i[1])):
                     print >> output, """
                         <tr>
                             <td>%s</td>
@@ -198,6 +198,7 @@ class REDSpider(object):
             # Avoid HTML validation for pages which didn't load correctly. RED normally
             # reports an error in this case so we'll leave the general server
             # failure message in the report but avoid further reporting
+
             if red.res_complete and self.validate_html and red.parsed_hdrs['content-type'][0] == 'text/html':
                 self.report_tidy_messages(uri, html_body.content)
 
