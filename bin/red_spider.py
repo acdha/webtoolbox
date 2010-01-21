@@ -199,8 +199,13 @@ class REDSpider(object):
             # reports an error in this case so we'll leave the general server
             # failure message in the report but avoid further reporting
 
-            if red.res_complete and self.validate_html and red.parsed_hdrs['content-type'][0] == 'text/html':
-                self.report_tidy_messages(uri, html_body.content)
+            if red.res_status in ("301", "302"):
+                self.process_link(red.parsed_hdrs['location'], '<HTTP Redirect>', '')
+                continue
+            elif red.res_status == "200":
+                # We only validate pages which loaded successfully:
+                if red.res_complete and self.validate_html and red.parsed_hdrs['content-type'][0] == 'text/html':
+                    self.report_tidy_messages(uri, html_body.content)
 
             errs = not red.res_complete or any([ m for m in red.messages if m.level in ['error', 'bad']])
 
@@ -255,15 +260,12 @@ class REDSpider(object):
             logging.debug("Link matched skip_link_re - skipping %s", link)
             return
 
-        if tag.lower() != tag:
-            logging.warn("Mismatch tag case: %s %s", tag, link)
-            sys.exit(1)
-
         if not link_parts.scheme.startswith("http"):
             logging.debug("Skipping non-HTTP link: %s", link)
             return
 
-        if tag in ['a', 'frame', 'iframe']:
+        # <HTTP Redirect> is used when we encounter 301/302 redirects:
+        if tag in ['a', 'frame', 'iframe', '<HTTP Redirect>']:
             if not link in self.pages:
                 self.uris.append(link)
                 self.pages.add(link)
