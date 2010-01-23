@@ -14,7 +14,6 @@ import os
 import random
 import sys
 import time
-from collections import deque
 
 from webtoolbox.clients import Retriever
 
@@ -72,25 +71,26 @@ def main(argv=None):
     
     fetcher.response_processors.append(stats)
 
-    queue = list()
+    urls = list()
 
     for arg in args:
         # Is it a file?
         if os.path.exists(arg):
-            queue.extend(l.strip() for l in file(sys.argv[1]))
+            urls.extend(l.strip() for l in file(sys.argv[1]))
         else:
             # TODO: Validate URLs before adding them
-            queue.append(arg)
+            urls.append(arg)
 
     if options.repeat > 1:
-        queue = queue * options.repeat
+        urls = urls * options.repeat
         
     if options.random:
-        random.shuffle(queue)
+        random.shuffle(urls)
         
     # Now that we're done changing it, we'll load the URL queue into the fetcher:
 
-    fetcher.queue_urls(queue)
+    for u in urls:
+        fetcher.queue(u)
 
     start_time = time.time()
 

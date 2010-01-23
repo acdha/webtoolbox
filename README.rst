@@ -13,16 +13,15 @@ already have them::
 Once they're setup you'll want to create a virtualenv::
 
     mkvirtualenv webtoolbox
-	add2virtualenv /path/to/webtoolbox    
+    add2virtualenv /path/to/webtoolbox    
 
-To use the `Tornado <http://tornadoweb.org>`_ based tools::
+Now you're ready to install our prerequisites::
 
-    pip install pycurl
-    pip install tornado
+    pip install -r requirements.pip
 
-*Note:* Tornado uses `pycurl`, which should install correctly on a Mac using a
-simple `pip install pycurl`. If you encounter problems follow the instructions
-in the Tornado documentation to install pycurl 7.16.2.1 instead.
+*Note:* Tornado uses ``pycurl``, which may or may not install correctly on a
+Mac using a simple ``pip install pycurl``. If you encounter problems follow the
+instructions in the Tornado documentation.
 
 To use the `redbot <http://mnot.github.com/redbot/>`_-based tools. This is
 complicated by the fact that redbot hasn't been turned into an importable
@@ -34,6 +33,17 @@ module yet::
 
 The Tools
 =========
+
+check_site
+----------
+
+A site validator which uses ``webclient.clients.Spider`` to process an entire
+site and checking for bad links, 404s, and optionally HTML validation. It
+generates either text or HTML reports and can be used to generate lists of
+site URLs for use with load-testing tools like ``tornado-bench`` or
+``wk-bench``.
+
+Run ``check_site.py --help`` to see the available options
 
 red_spider
 ----------
@@ -51,20 +61,19 @@ which allows you to perform all of those checks by spidering an entire site,
 receiving a nice HTML report and, optionally, also validating page contents as
 well.
 
-Run `red_spider.py --help` to see the available options. Key features include
-the ability to skip media and save lists of URLs for use with tools like
-`wk-bench` or `tornado-bench`.
+Run ``red_spider.py --help`` to see the available options. Key features
+include the ability to skip media and save lists of URLs for use with tools
+like ``wk-bench`` or ``tornado-bench``.
 
 log_replay
 ----------
 
 If you need to replace webserver log files at something approximating
-realtime, `log_replay` is your friend. It uses Tornado's non-blocking HTTP
-client (based on pycurl - at some point it would be good to refactor down to
-just that) to fetch all of the URLs but will sleep any time it's too far ahead
+realtime, ``log_replay`` is your friend. It uses Tornado's non-blocking HTTP
+client to fetch all of the URLs but will sleep any time it's too far ahead
 of the simulated virtual time.
 
-Run `log_replay.py --help` to see the available options
+Run ``log_replay.py --help`` to see the available options
 
 tornado-bench
 -------------
@@ -72,7 +81,7 @@ tornado-bench
 Also uses Tornado's non-blocking HTTP client, this program simply takes a big
 list of URLs and simply retrieves them as quickly as possible.
 
-Run `tornado-bench.py --help` to see the available options
+Run ``tornado-bench.py --help`` to see the available options
 
 wk-bench
 --------
@@ -80,8 +89,8 @@ wk-bench
 Mac OS X-specific tool which uses PyObjC to load pages in WebKit. Takes URLs
 on the command-line or in a separate file and runs through them as quickly as
 possible, measuring the time it takes from beginning the request until the
-browser fires the `didFinishLoadForFrame` event, which includes things like
+browser fires the ``didFinishLoadForFrame`` event, which includes things like
 image loading, Flash, JavaScript, etc. for measuring user-perceptible
 page-load performance.
 
-Run `wk-bench.py --help` to see the available options
+Run ``wk-bench.py --help`` to see the available options
