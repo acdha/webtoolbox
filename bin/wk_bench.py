@@ -159,7 +159,7 @@ class UIDelegate(NSObject, WebKit.protocols.WebUIDelegate):
 
 
 def main():
-    cmdparser = optparse.OptionParser(__doc__.strip(), version="wk-bench %s" % __version__)
+    cmdparser = optparse.OptionParser(__doc__.strip(), version="wk_bench %s" % __version__)
     cmdparser.add_option("--debug", action="store_true", help="Display more progress information")
     cmdparser.add_option("-u", "--url_list", help="Specify a list of URLs in a file rather than on the command-line")
     cmdparser.add_option("--requests", dest="max_requests", type="int", default=0, help="How many requests to make")
@@ -206,7 +206,7 @@ def main():
     webview = WebKit.WebView.alloc()
     webview.initWithFrame_(rect)
 
-    webview.setPreferencesIdentifier_('wk-bench')
+    webview.setPreferencesIdentifier_('wk_bench')
     
     webview.preferences().setJavaEnabled_(False)
 

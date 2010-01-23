@@ -84,15 +84,32 @@ class Retriever(object):
 
 
 class Spider(Retriever):
+    """
+    Retriever-based Site Crawler
+    
+    Starts with an initial list of URLs and crawls them asynchronously,
+    providing HTML pages to :attr:`html_processors` and
+    :attr:`tree_processors` for additional functionality. See
+    :ref:`check_site` for an example of this function being used to report
+    HTML validation errors from pytidylib.
+    """
+    #: Logger used to report progress & errors
     log = None
 
+    #: This will be automatically populated from the inital batch of URLs
+    # passed to :meth:`run` and will be used to determine whether to follow
+    # links or simply record them.
     allowed_hosts = set()
 
-    uris = set()
+    #: All urls processed by this spider
+    urls = set()
 
-    skip_link_re = re.compile("^$") # URLs which match won't be spidered
+    #: URLs whose path matches this regular expression won't be followed:
+    skip_link_re = re.compile("^$")
 
+    #: If true, don't retrieve media files (i.e. <img>, <object>, <embed>, etc.)
     skip_media = False
+    #: If true, don't process non-media components (i.e. stylesheets or CSS)
     skip_resources = False
 
     #: HTML processors will be called with unprocessed HTML as a UTF-8 string
@@ -100,8 +117,8 @@ class Spider(Retriever):
     #  subsequent processors, including *ALL* tree processors
     html_processors = list()
 
-    #: Tree will be called with the full lxml tree, which can be modified to
-    #  affect subsequent tree processors. Caution is advised!
+    #: Tree processors will be called with the full lxml tree, which can be
+    # modified to affect subsequent tree processors. Caution is advised!
     tree_processors = list()
 
     # Used to extract the charset for HTML responses:
@@ -115,29 +132,51 @@ class Spider(Retriever):
     CONTROL_CHAR_RE = re.compile('[%s]' % "".join(re.escape(unichr(c)) for c in range(0, 8) + range(14, 31) + range(127, 160)))
 
     def __init__(self, log_name="Spider", **kwargs):
+        """Create a new Spider, optionally with a custom logging name"""
         super(Spider, self).__init__(**kwargs)
 
         self.log = logging.getLogger(log_name)
 
         self.response_processors.append(self.process_page)
 
-    def run(self, uris):
-        for uri in uris:
-            parsed_uri = urlparse(uri)
+    def run(self, urls):
+        """
+        Start the spider with the provided list of URLs
+        
+        Block until the spider has crawled the entire site
+        """
+        for url in urls:
+            parsed_url = urlparse(url)
 
             # We add any hostname specified in the initial run to the list of hostnames we'll spider:
-            self.allowed_hosts.add(parsed_uri.netloc)
+            self.allowed_hosts.add(parsed_url.netloc)
 
-            self.queue(uri)
+            self.queue(url)
 
         super(Spider, self).run()
 
-    def queue(self, uri):
-        if not uri in self.uris:
-            super(Spider, self).queue(uri)
-            self.uris.add(uri)
+    def queue(self, url):
+        """Add a URL to the queue to be retrieved"""
+        if not url in self.urls:
+            super(Spider, self).queue(url)
+            self.urls.add(url)
 
     def process_page(self, request, response):
+        """
+        Callback used to process a URL after it's been retrieved
+        
+        Rough sequence:
+            #. Process errors and redirects
+            #. Process non-HTML content
+            #. Convert retrieved HTML to UTF-8
+            #. Process HTML through the defined :attr:`html_processors`
+            #. Create an ``lxml`` tree
+            #. Convert all links to absolute URLs
+            #. Queue any unseen URLs for retrieval
+            #. Pass lxml tree to :attr:`tree_processors`
+        
+        """
+
         url = request.url
 
         if response.error:

@@ -40,8 +40,8 @@ check_site
 A site validator which uses ``webclient.clients.Spider`` to process an entire
 site and checking for bad links, 404s, and optionally HTML validation. It
 generates either text or HTML reports and can be used to generate lists of
-site URLs for use with load-testing tools like ``tornado-bench`` or
-``wk-bench``.
+site URLs for use with load-testing tools like ``tornado_bench`` or
+``wk_bench``.
 
 Run ``check_site.py --help`` to see the available options
 
@@ -63,7 +63,7 @@ well.
 
 Run ``red_spider.py --help`` to see the available options. Key features
 include the ability to skip media and save lists of URLs for use with tools
-like ``wk-bench`` or ``tornado-bench``.
+like ``wk_bench`` or ``tornado_bench``.
 
 log_replay
 ----------
@@ -75,15 +75,15 @@ of the simulated virtual time.
 
 Run ``log_replay.py --help`` to see the available options
 
-tornado-bench
+tornado_bench
 -------------
 
 Also uses Tornado's non-blocking HTTP client, this program simply takes a big
 list of URLs and simply retrieves them as quickly as possible.
 
-Run ``tornado-bench.py --help`` to see the available options
+Run ``tornado_bench.py --help`` to see the available options
 
-wk-bench
+wk_bench
 --------
 
 Mac OS X-specific tool which uses PyObjC to load pages in WebKit. Takes URLs
@@ -93,4 +93,4 @@ browser fires the ``didFinishLoadForFrame`` event, which includes things like
 image loading, Flash, JavaScript, etc. for measuring user-perceptible
 page-load performance.
 
-Run ``wk-bench.py --help`` to see the available options
+Run ``wk_bench.py --help`` to see the available options

@@ -5,7 +5,7 @@ High-performance server-crushing tool
 
 Usage:
 
-tornado-bench.py url_or_file [url_or_file2 …]
+tornado_bench.py url_or_file [url_or_file2 …]
 """
 
 import logging
@@ -26,7 +26,7 @@ def main(argv=None):
         logging.critical("Couldn't import Tornado (try `easy_install tornado`): %s", e)
         sys.exit(99)
 
-    cmdparser = optparse.OptionParser(__doc__.strip(), version="tornado-bench %s" % __version__)
+    cmdparser = optparse.OptionParser(__doc__.strip(), version="tornado_bench %s" % __version__)
     cmdparser.add_option("--verbosity", "-v", "--verbose", action="count", help="Display more progress information")
     cmdparser.add_option("--save-bad-urls", type="string", help="Save all URLs which returned errors to the provided filename")
     cmdparser.add_option("--save-good-urls", type="string", help="Save all URLs which did not return errors to the provided filename")
