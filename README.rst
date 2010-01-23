@@ -13,16 +13,16 @@ already have them::
 Once they're setup you'll want to create a virtualenv::
 
     mkvirtualenv webtoolbox
-    
+	add2virtualenv /path/to/webtoolbox    
+
 To use the `Tornado <http://tornadoweb.org>`_ based tools::
 
     pip install pycurl
-    pip install -e git://github.com/facebook/tornado.git@master#egg=tornado
+    pip install tornado
 
-*Note:* Tornado uses `pycurl`, which currently does install correctly on a Mac using a
+*Note:* Tornado uses `pycurl`, which should install correctly on a Mac using a
 simple `pip install pycurl`. If you encounter problems follow the instructions
 in the Tornado documentation to install pycurl 7.16.2.1 instead.
-    
 
 To use the `redbot <http://mnot.github.com/redbot/>`_-based tools. This is
 complicated by the fact that redbot hasn't been turned into an importable

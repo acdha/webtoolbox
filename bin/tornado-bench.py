@@ -7,67 +7,24 @@ Usage:
 
 tornado-bench.py url_or_file [url_or_file2 …]
 """
-import optparse
+
 import logging
-import sys
+import optparse
 import os
+import random
+import sys
 import time
 from collections import deque
 
-__version__ = "0.1"
+from webtoolbox.clients import Retriever
 
-class URLFetcher(object):    
-    total     = 0
-    completed = 0
-    errors    = 0
-    
-    good_urls = deque()
-    bad_urls  = deque()
-
-    ioloop    = None
-
-    def __init__(self, max_clients=10, max_connections=6):
-        from tornado import ioloop, httpclient
-
-        self.http_client = httpclient.AsyncHTTPClient(
-            max_simultaneous_connections=max_connections,
-            max_clients=max_clients,
-        )
-        
-        self.ioloop = ioloop.IOLoop.instance()
-        
-    def run(self):
-        self.ioloop.start()
-
-    def load(self, urls):
-        """Queue up a list of URLs to retrieve"""
-        if not isinstance(urls, list):
-            urls = [urls]
-
-        self.total += len(urls)
-        for u in urls:
-            self.http_client.fetch(u, self.response_handler)
-
-    def response_handler(self, response):
-        url = response.request.url
-        
-        if response.error:
-            logging.info("Unable to retrieve %s: %s", url, response.error)
-            self.bad_urls.append(url)
-        else:
-            self.good_urls.append(url)
-    
-        self.completed += 1
-    
-        if self.completed >= self.total:
-            logging.info("Finished")
-            self.ioloop.stop()
+__version__ = "0.2"
 
 def main(argv=None):
     try:
         import tornado
     except ImportError, e:
-        logging.critical("Couldn't import Tornado: %s", e)
+        logging.critical("Couldn't import Tornado (try `easy_install tornado`): %s", e)
         sys.exit(99)
 
     cmdparser = optparse.OptionParser(__doc__.strip(), version="tornado-bench %s" % __version__)
@@ -76,6 +33,8 @@ def main(argv=None):
     cmdparser.add_option("--save-good-urls", type="string", help="Save all URLs which did not return errors to the provided filename")
     cmdparser.add_option("--max-connections", type="int", default=8, help="Set the number of simultaneous connections")
     cmdparser.add_option("--max-clients", type="int", default=10, help="Set the number of simultaneous clients")
+    cmdparser.add_option("--repeat", type="int", default=1, help="Retrieve the provided URLs n times")
+    cmdparser.add_option("--random", action="store_true", default=False, help="Randomize the URLs before processing")
     (options, args) = cmdparser.parse_args()
 
     if not args:
@@ -93,32 +52,64 @@ def main(argv=None):
         level  = log_level
     )
     
-    fetcher = URLFetcher(max_connections=options.max_connections, max_clients=options.max_clients)
+    fetcher = Retriever(max_simultaneous_connections=options.max_connections, max_clients=options.max_clients)
+    
+    class StatsProcessor(object):
+        total = 0
+        errors = 0
+        good_urls = set()
+        bad_urls = set()
+        
+        def __call__(self, request, response):
+            self.total += 1
+            if response.error:
+                self.errors += 1
+                self.bad_urls.add(request.url)
+            else:
+                self.good_urls.add(request.url)
+    
+    stats = StatsProcessor()
+    
+    fetcher.response_processors.append(stats)
+
+    queue = list()
 
     for arg in args:
         # Is it a file?
         if os.path.exists(arg):
-            fetcher.load([l.strip() for l in file(sys.argv[1])])
+            queue.extend(l.strip() for l in file(sys.argv[1]))
         else:
             # TODO: Validate URLs before adding them
-            fetcher.load(arg)
+            queue.append(arg)
+
+    if options.repeat > 1:
+        queue = queue * options.repeat
+        
+    if options.random:
+        random.shuffle(queue)
+        
+    # Now that we're done changing it, we'll load the URL queue into the fetcher:
+
+    fetcher.queue_urls(queue)
 
     start_time = time.time()
+
     fetcher.run()
+
     elapsed = time.time() - start_time
     
     print "Retrieved {total} URLs ({bad} errors) in {elapsed:0.2f} seconds ({rate:0.1f} req/s)".format(
-        total=fetcher.total, 
+        bad=stats.errors,
         elapsed=elapsed, 
-        rate=fetcher.total / elapsed,
-        bad=len(fetcher.bad_urls)
+        rate=stats.total / elapsed,
+        total=stats.total, 
     )
     
     if options.save_bad_urls:
-        open(options.save_bad_urls, "w").write("\n".join(fetcher.bad_urls))
+        open(options.save_bad_urls, "w").write("\n".join(stats.bad_urls))
 
     if options.save_good_urls:
-        open(options.save_good_urls, "w").write("\n".join(fetcher.good_urls))
+        open(options.save_good_urls, "w").write("\n".join(stats.good_urls))
 
 
 if __name__ == "__main__":
