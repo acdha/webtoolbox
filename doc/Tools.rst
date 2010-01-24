@@ -9,7 +9,7 @@ Spiders
 
    check_site
    red_spider
-   
+
 Load Generators
 ---------------
 

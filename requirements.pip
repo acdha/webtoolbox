@@ -6,3 +6,6 @@ tornado
 http://html5lib.googlecode.com/files/html5lib-0.11.1.zip#egg=html5lib-0.11-1
 
 lxml
+
+# Used to generate HTML reports:
+jinja2

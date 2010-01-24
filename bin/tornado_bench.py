@@ -50,15 +50,15 @@ def main(argv=None):
         format = "%(asctime)s [%(levelname)s]: %(message)s",
         level  = log_level
     )
-    
+
     fetcher = Retriever(max_simultaneous_connections=options.max_connections, max_clients=options.max_clients)
-    
+
     class StatsProcessor(object):
         total = 0
         errors = 0
         good_urls = set()
         bad_urls = set()
-        
+
         def __call__(self, request, response):
             self.total += 1
             if response.error:
@@ -66,9 +66,9 @@ def main(argv=None):
                 self.bad_urls.add(request.url)
             else:
                 self.good_urls.add(request.url)
-    
+
     stats = StatsProcessor()
-    
+
     fetcher.response_processors.append(stats)
 
     urls = list()
@@ -83,10 +83,10 @@ def main(argv=None):
 
     if options.repeat > 1:
         urls = urls * options.repeat
-        
+
     if options.random:
         random.shuffle(urls)
-        
+
     # Now that we're done changing it, we'll load the URL queue into the fetcher:
 
     for u in urls:
@@ -97,14 +97,14 @@ def main(argv=None):
     fetcher.run()
 
     elapsed = time.time() - start_time
-    
+
     print "Retrieved {total} URLs ({bad} errors) in {elapsed:0.2f} seconds ({rate:0.1f} req/s)".format(
         bad=stats.errors,
-        elapsed=elapsed, 
+        elapsed=elapsed,
         rate=stats.total / elapsed,
-        total=stats.total, 
+        total=stats.total,
     )
-    
+
     if options.save_bad_urls:
         open(options.save_bad_urls, "w").write("\n".join(stats.bad_urls))
 

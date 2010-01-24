@@ -1,14 +1,26 @@
 # encoding: utf-8
 
 from urlparse import urlparse, urlunparse, urldefrag
+from collections import defaultdict
 
 import logging
 import re
 import time
 
+import chardet
 import lxml.html.html5parser
 
-from tornado import httpclient
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+
+
+#: Light-weight class used for reporting purposes
+class URLStatus(object):
+    code = None
+
+    #: Referrers list will be populated as we encounter them:
+    referrers = set()
+    #: Link list will be populated during the link walk stage:
+    links = set()
 
 
 class Retriever(object):
@@ -17,7 +29,7 @@ class Retriever(object):
 
     Usage is simple:
         1. Create a Retriever, optionally providing a log_name for logging and
-           any of the kwargs accepted by tornado.httpclient.AsyncHTTPClient
+           any of the kwargs accepted by :class:`tornado.httpclient.AsyncHTTPClient`
 
         2. Add request processor callbacks to retriever.response_processors.
            Each will be called with args=(request, response)
@@ -35,6 +47,7 @@ class Retriever(object):
     # methods for AsyncHTTPClient or ioloop:
     queued = 0
     processed = 0
+    errors = 0
 
     http_client = None
 
@@ -43,9 +56,9 @@ class Retriever(object):
     log = None
 
     def __init__(self, log_name="Retriever", **kwargs):
-        self.http_client = httpclient.AsyncHTTPClient(**kwargs)
+        self.http_client = AsyncHTTPClient(**kwargs)
         self.log = logging.getLogger(log_name)
-        
+
     @property
     def completed(self):
         return self.processed == self.queued
@@ -62,12 +75,17 @@ class Retriever(object):
     def queue(self, url):
         """Queue up a list of URLs to retrieve"""
 
-        self.http_client.fetch(url, self.response_handler)
+        self.http_client.fetch(
+            HTTPRequest(url, follow_redirects=True, max_redirects=5),
+            self.response_handler
+        )
 
         self.queued += 1
 
     def response_handler(self, response):
         self.processed += 1
+        if response.error:
+            self.errors += 1
 
         self.log.info("Retrieved %s (elapsed=%0.2f, status=%s)", response.request.url, response.request_time, response.code)
 
@@ -85,13 +103,14 @@ class Retriever(object):
 
 class Spider(Retriever):
     """
-    Retriever-based Site Crawler
-    
+    Retriever-based Spider
+
     Starts with an initial list of URLs and crawls them asynchronously,
-    providing HTML pages to :attr:`html_processors` and
-    :attr:`tree_processors` for additional functionality. See
-    :ref:`check_site` for an example of this function being used to report
-    HTML validation errors from pytidylib.
+    providing results to :attr:`header_processors`, :attr:`html_processors` and
+    :attr:`tree_processors` which implement additional functionality.
+
+    :ref:`check_site` demonstrates the HTML processor feature to report HTML
+    validation errors from pytidylib.
     """
     #: Logger used to report progress & errors
     log = None
@@ -101,8 +120,9 @@ class Spider(Retriever):
     # links or simply record them.
     allowed_hosts = set()
 
-    #: All urls processed by this spider
-    urls = set()
+    #: All urls processed by this spider as a URL-keyed list of :class:URLStatus elements
+    site_structure = defaultdict(URLStatus)
+    url_history = set()
 
     #: URLs whose path matches this regular expression won't be followed:
     skip_link_re = re.compile("^$")
@@ -111,6 +131,9 @@ class Spider(Retriever):
     skip_media = False
     #: If true, don't process non-media components (i.e. stylesheets or CSS)
     skip_resources = False
+
+    #: Header processors will be called with (URL, HTTP Headers)
+    header_processors = list()
 
     #: HTML processors will be called with unprocessed HTML as a UTF-8 string
     #  processors can return a string to *REPLACE* the provided HTML for all
@@ -123,13 +146,17 @@ class Spider(Retriever):
 
     # Used to extract the charset for HTML responses:
     HTTP_CONTENT_TYPE_CHARSET_RE = re.compile("text/html;.*charset=(?P<charset>[^ ]+)", re.IGNORECASE)
+    # Used to sniff for XML preambles:
+    XML_CHARSET_PREAMBLE_RE = re.compile('^<\?xml[^>]+encoding="(?P<charset>[^"]+)"', re.IGNORECASE)
 
     # Based on http://stackoverflow.com/questions/92438/stripping-non-printable-characters-from-a-string-in-python
-    # 
+    #
     # We omit chars 9-13 (tab, newline, vertical tab, form feed, return) and
     # 32 (space) to avoid clogging our reports with warnings about common,
     # non-problematic codes
     CONTROL_CHAR_RE = re.compile('[%s]' % "".join(re.escape(unichr(c)) for c in range(0, 8) + range(14, 31) + range(127, 160)))
+
+    redirect_map = {}
 
     def __init__(self, log_name="Spider", **kwargs):
         """Create a new Spider, optionally with a custom logging name"""
@@ -142,7 +169,7 @@ class Spider(Retriever):
     def run(self, urls):
         """
         Start the spider with the provided list of URLs
-        
+
         Block until the spider has crawled the entire site
         """
         for url in urls:
@@ -157,14 +184,45 @@ class Spider(Retriever):
 
     def queue(self, url):
         """Add a URL to the queue to be retrieved"""
-        if not url in self.urls:
+
+        if url not in self.url_history:
+            self.url_history.add(url)
             super(Spider, self).queue(url)
-            self.urls.add(url)
+
+    def guess_charset(self, response):
+        """
+        Does the ugly business of attempting to figure out how to decode the
+        response to a unicode string
+        """
+        url = response.effective_url
+
+        # Look for a specific pre-amble:
+        xml_sniff = self.XML_CHARSET_PREAMBLE_RE.match(response.body)
+
+        if xml_sniff:
+            charset = xml_sniff.group("charset")
+            self.log.debug("%s: processing body as document-specified charset=%s", url, charset)
+            return charset
+
+        # Attempt to parse the content_type info:
+        m = self.HTTP_CONTENT_TYPE_CHARSET_RE.match(response.headers["Content-Type"])
+
+        if m:
+            charset = m.group("charset")
+            self.log.debug("%s: processing body as header-specified charset=%s", url, charset)
+            return charset
+
+        # TODO: Should this be reported as a warning re:poor server config?
+        # Looks like we'll do it the slow way:
+        det = chardet.detect(response.body)
+        self.log.info("%s: processing body as detected charset=%s (confidence=%0.1f)", url, det['encoding'], det['confidence'])
+        return det['encoding']
+
 
     def process_page(self, request, response):
         """
         Callback used to process a URL after it's been retrieved
-        
+
         Rough sequence:
             #. Process errors and redirects
             #. Process non-HTML content
@@ -174,41 +232,54 @@ class Spider(Retriever):
             #. Convert all links to absolute URLs
             #. Queue any unseen URLs for retrieval
             #. Pass lxml tree to :attr:`tree_processors`
-        
+
         """
 
-        url = request.url
+        url = response.effective_url
 
-        if response.error:
-            self.log.error("Unable to retrieve %s: %s", url, response.error)
+        self.site_structure[url].code = response.code
+
+        if not url == request.url:
+            if response.error:
+                self.log.warning("%s: redirected to %d page %s", request.url, response.code, response.effective_url)
+                return
+            else:
+                self.log.info("%s: redirected to %s", request.url, response.effective_url)
+                self.redirect_map[request.url] = response.effective_url
+        elif response.error:
+            self.log.error("Unable to retrieve %s: %d %s", url, response.code, response.error)
             return
 
-        if response.code in (301, 302):
-            self.process_redirect(response.effective_url)
-            return
+        content_length = int(response.headers.get('Content-Length', -1))
+
+        if content_length > -1 and len(response.body) != content_length:
+            self.log.warning("%s: Content-Length mismatch %d bytes != %d received", url, content_length, len(response.body))
 
         content_type = response.headers.get('Content-Type', None)
 
         if not content_type:
-            self.log.warning("%s: no content type?", url)
+            self.log.warning("%s: no Content-Type‽", url)
             return
 
         if not content_type.startswith("text/html"):
             self.log.info("Done processing %s resource %s", content_type, url)
-            # TODO: Log (url, code, time) for reporting
             return
 
-        # Attempt to parse the content_type info:
-        m = self.HTTP_CONTENT_TYPE_CHARSET_RE.match(content_type)
+        for p in self.header_processors:
+            try:
+                p(url, response.headers)
+            except:
+                logging.exception("Header processor %s: unhandled exception", p)
+                raise
 
-        if m:
-            charset = m.group("charset")
-        else:
-            charset = "latin-1" # Sigh...
+        charset = self.guess_charset(response)
 
-        self.log.info("%s: processing body as charset=%s", url, charset)
-
-        html = unicode(response.body, charset)
+        try:
+            html = unicode(response.body, charset)
+        except UnicodeDecodeError, e:
+            self.log.error("%s: skipping page - unable to decode body as %s: %s", url, charset, e)
+            import code; code.interact(local=dict(locals().items() + globals().items()))
+            return
 
         html, junk_count = self.CONTROL_CHAR_RE.subn(' ', html)
         if junk_count:
@@ -237,9 +308,18 @@ class Spider(Retriever):
         for element, attribute, link, pos in tree.iterlinks():
             link_p = urlparse(link)
 
+            # Reconstruct the URL to remove fragments and normalize alternate
+            # forms which are equivalent. e.g. http://example.com/foo? and
+            # http://example.com/foo are considered to be the same
+            normalized_url = urldefrag(urlunparse(link_p))[0]
+
+            self.site_structure[url].links.add(normalized_url)
+
             if link_p.netloc and not link_p.netloc in self.allowed_hosts:
                 self.log.debug("Skipping external resource: %s", link)
                 continue
+
+            self.site_structure[normalized_url].referrers.add(url)
 
             if self.skip_link_re.match(link_p.path):
                 self.log.debug("Link matched skip_link_re - skipping %s", link)
@@ -249,21 +329,13 @@ class Spider(Retriever):
                 self.log.debug("Skipping non-HTTP link: %s", link)
                 continue
 
-            # Reconstruct the URL to remove fragments and normalize alternate
-            # forms which are equivalent. e.g. http://example.com/foo? and
-            # http://example.com/foo are considered to be the same
-            normalized_url = urldefrag(urlunparse(link_p))[0]
-
             if element.tag in ('a', 'frame', 'iframe'):
-                self.report.pages.add(normalized_url)
                 self.queue(normalized_url)
-            if element.tag in ('img', 'object', 'embed'):
-                self.report.media.add(link)
-                if not self.skip_media:
+            elif element.tag in ('link', 'script'):
+                if not self.skip_resources:
                     self.queue(normalized_url)
             else:
-                self.report.resources.add(link)
-                if not self.skip_resources:
+                if not self.skip_media:
                     self.queue(normalized_url)
 
         for p in self.tree_processors:

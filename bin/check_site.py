@@ -15,13 +15,15 @@ Currently checks:
 
 """
 
-import os
-import sys
-import optparse
-import logging
-import re
-from collections import defaultdict
 from cgi import escape
+from collections import defaultdict
+
+import logging
+import optparse
+import os
+import re
+import sys
+import time
 
 from webtoolbox.clients import Spider
 
@@ -29,7 +31,13 @@ from webtoolbox.clients import Spider
 TIDY_RE = re.compile("line (?P<line>\d+) column (?P<column>\d+) - (?P<level>\w+): (?P<message>.*)$", re.MULTILINE)
 
 class SpiderReport(object):
-    """Represents information which applies to one or more URIs"""
+    """Represents information which applies to one or more URLs"""
+
+    #: Can be updated to pass variables into the template context:
+    extra_context = {
+        "title": "Spider Report"
+    }
+
     messages  = defaultdict(dict)
     pages     = set()
     resources = set()
@@ -47,12 +55,7 @@ class SpiderReport(object):
     # Used to avoid problems with dict.keys() not being stable:
     REPORT_ORDER = ('error', 'warning', 'bad', 'good', 'info')
 
-    def __init__(self, severity=None, title="", details=""):
-        self.severity = severity
-        self.title    = title
-        self.details  = details
-
-    def add(self, uri=None, category=None, severity=None, title=None, details=None):
+    def add(self, url=None, category=None, severity=None, title=None, details=None):
         if not severity in self.SEVERITY_LEVELS:
             raise ValueError("%s is not a valid severity level" % severity)
 
@@ -60,10 +63,10 @@ class SpiderReport(object):
         tgt  = self.messages.setdefault(severity, {}).setdefault(category, {}).setdefault(title, {})
 
         if not tgt:
-            tgt['uris'] = set()
+            tgt['urls'] = set()
             tgt['details'] = details
 
-        tgt['uris'].add(uri)
+        tgt['urls'].add(url)
 
     def save(self, format="html", output=sys.stdout):
         if format == "html":
@@ -72,59 +75,23 @@ class SpiderReport(object):
             self.generate_text(output)
 
     def generate_html(self, output):
-        def make_link(url):
-            url = escape(url)
-            # TODO: Save page titles for pretty links?
-            title = url if len(url) < 70 else escape(url[0:70]) + "&hellip;"
+        from jinja2 import Environment, PackageLoader
+        env = Environment(autoescape=True, loader=PackageLoader('webtoolbox', 'templates'))
 
-            return """<a href="%s">%s</a>""" % (url, title)
-
-        # TODO: Switch to a templating system - but which one?
-        template = open(os.path.join(os.path.dirname(__file__), "..", "lib", "red_spider_template.html"))
-
-        for line in template:
-            if "GENERATED_CONTENT" in line:
-                break
-            output.write(line)
-
-        for level in self.REPORT_ORDER:
-            if not level in self.messages: continue
-
-            print >> output, """<h1 id="%s">%s</h1>""" % (level, self.SEVERITY_LEVELS[level])
-            categories = self.messages[level]
-
-            for category in sorted(categories.keys()):
-                summaries = categories[category]
-                print >> output, """<h2 class="%s">%s</h2>""" % (category, category)
-
-                print >> output, """
-                    <table class="%s">
-                        <thead>
-                            <tr>
-                                <th>Message</th>
-                                <th>Pages</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                """ % " ".join(map(escape, [level, category]))
-
-                for summary, data in sorted(summaries.items(), key=lambda i: (i[0].lower(), i[1])):
-                    print >> output, """
-                        <tr>
-                            <td>%s</td>
-                            <td> <ul class="uri"><li>%s</li></ul> </td>
-                        </tr>
-                    """ % (escape(summary), "</li><li>".join(map(make_link, sorted(data['uris']))))
-
-                print >> output, """</tbody></table>"""
-
-        print >> output, """<h1>All Pages</h1><ul class="uri page"><li>%s</li></ul>""" % "</li><li>".join(map(make_link, sorted(self.pages)))
-        print >> output, """<h1>All Resources</h1><ul class="uri resource"><li>%s</li></ul>""" % "</li><li>".join(map(make_link, sorted(self.resources)))
-        print >> output, """<h1>All Media</h1><ul class="uri media"><li>%s</li></ul>""" % "</li><li>".join(map(make_link, sorted(self.media)))
-
-        output.writelines(template)
+        template = env.get_template("check_site_report.html")
+        output.write(template.render(
+            messages=self.messages,
+            pages=self.pages,
+            media=self.media,
+            resources=self.resources,
+            severity_levels=self.REPORT_ORDER,
+            **self.extra_context
+        ))
 
     def generate_text(self, output):
+        print "%(title)s" % self.extra_context
+        print "Retrieved %(urls_total)d URLs in %(elapsed_time)0.2f seconds with %(urls_error)d errors" % self.extra_context
+
         for level in self.REPORT_ORDER:
             if not level in self.messages:
                 continue
@@ -137,8 +104,8 @@ class SpiderReport(object):
                 print >> output, "\t%s:" % category
 
                 for summary, data in summaries.items():
-                    print >> output, "\t\t%s: %d pages" % (summary, len(data['uris']))
-                    print >> output, "\t\t\t%s" % "\n\t\t\t".join(sorted(data['uris']))
+                    print >> output, "\t\t%s: %d pages" % (summary, len(data['urls']))
+                    print >> output, "\t\t\t%s" % "\n\t\t\t".join(sorted(data['urls']))
                     print >> output
 
             print >> output
@@ -148,9 +115,12 @@ class QASpider(Spider):
     def __init__(self, validate_html=False, log_name="QASpider", **kwargs):
         super(QASpider, self).__init__(log_name=log_name, **kwargs)
         self.report = SpiderReport()
-        
+
         if validate_html:
             self.html_processors.append(self.validate_html)
+
+        self.tree_processors.append(self.tree_resource_accounting)
+        self.header_processors.append(self.update_resource_report)
 
     def validate_html(self, url, body):
         import tidylib
@@ -159,12 +129,41 @@ class QASpider(Spider):
 
         for warn_match in TIDY_RE.finditer(warnings):
             sev = "error" if warn_match.group("level").lower() == "error" else "warning"
-            self.report.add(severity=sev, category="HTML", title=warn_match.group("message"), uri=url)
+            self.report.add(severity=sev, category="HTML", title=warn_match.group("message"), url=url)
 
         return html
 
+    def tree_resource_accounting(self, url, tree):
+        """
+        Some elements can be reliably predicted based on their tag names so
+        we'll add them to our report before fetching them
+        """
 
-def save_uri_list(fn, data):
+        for element, attribute, link, pos in tree.iterlinks():
+            if element.tag in ('link', 'script'):
+                self.report.resources.add(link)
+            elif element.tag in ('img', 'embed', 'object', 'audio', 'video'):
+                self.report.media.add(link)
+
+    def update_resource_report(self, url, headers):
+        """
+        Since we can't tell whether the contents of a link point to a page or
+        a media file we have to wait until we've retrieved it and use the
+        content type
+        """
+
+        content_type = headers.get("Content-Type", None)
+
+        if not content_type:
+            return
+
+        if content_type.startswith("text/html"):
+            self.report.pages.add(url)
+        else:
+            self.report.media.add(url)
+
+
+def save_url_list(fn, data):
     f = open(fn, "w")
     f.write("\n".join(data))
     f.write("\n")
@@ -220,12 +219,19 @@ def main():
     parser.add_option("-l", "--log", dest="log_file", help='Specify a location other than stderr', default=None)
     parser.add_option("-v", "--verbosity", action="count", default=0, help="Log level")
 
-    (options, uris) = parser.parse_args()
+    (options, urls) = parser.parse_args()
 
     configure_logging(options)
 
-    if not uris:
+    if not urls:
         parser.error("You must provide at least one URL to start spidering")
+
+    if options.report_format == "html":
+        try:
+            import jinja2
+        except ImportError:
+            logging.critical("You requested an HTML report but Jinja2 could not be imported. Try `pip install jinja2`")
+            sys.exit(42)
 
     if not isinstance(options.report_file, file):
         options.report_file = file(options.report_file, "w")
@@ -238,9 +244,9 @@ def main():
             logging.critical("Cannot perform HTML validation. Try `pip install pytidylib` or see http://countergram.com/software/pytidylib")
             sys.exit(42)
 
-    rs = QASpider(validate_html=options.validate_html)
-    rs.skip_media     = options.skip_media
-    rs.skip_resources = options.skip_resources
+    spider = QASpider(validate_html=options.validate_html)
+    spider.skip_media     = options.skip_media
+    spider.skip_resources = options.skip_resources
 
     if options.skip_link_re:
         i = options.skip_link_re
@@ -249,21 +255,32 @@ def main():
             i = r"^.*%s" % i
             logging.warn("Corrected unanchored skip_link_re to: %s", i)
 
-        rs.skip_link_re = re.compile(i, re.IGNORECASE)
+        spider.skip_link_re = re.compile(i, re.IGNORECASE)
 
-    rs.run(uris)
+    start = time.time()
+    spider.run(urls)
+    end = time.time()
 
-    if not rs.completed:
+    if not spider.completed:
         logging.warn("Aborting due to incomplete results!")
         sys.exit(1)
 
-    rs.report.save(format=options.report_format, output=options.report_file)
+    spider.report.extra_context.update(
+        title="Site Report for %s" % ", ".join(spider.allowed_hosts),
+        start_time=start,
+        end_time=end,
+        elapsed_time=end - start,
+        urls_total=spider.processed,
+        urls_error=spider.errors,
+    )
+
+    spider.report.save(format=options.report_format, output=options.report_file)
 
     if options.page_list:
-        save_uri_list(options.page_list, sorted(rs.pages))
+        save_url_list(options.page_list, sorted(spider.pages))
 
     if options.resource_list:
-        save_uri_list(options.resource_list, sorted(rs.resources))
+        save_url_list(options.resource_list, sorted(spider.resources))
 
 if "__main__" == __name__:
     main()

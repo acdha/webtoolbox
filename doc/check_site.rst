@@ -28,11 +28,11 @@ site URLs for use with load-testing tools like :ref:`tornado_bench` or
 
     Save report to a file instead of stdout
 
-.. cmdoption::    --skip-media          
+.. cmdoption::    --skip-media
 
     Skip media files: <img>, <object>, etc.
 
-.. cmdoption::    --skip-resources      
+.. cmdoption::    --skip-resources
 
     Skip resources: <script>, <link>
 
@@ -56,6 +56,6 @@ site URLs for use with load-testing tools like :ref:`tornado_bench` or
     Specify a location other than stderr
 
 .. cmdoption:: -v
-.. cmdoption:: --verbosity       
+.. cmdoption:: --verbosity
 
 Increase the amount of information displayed or logged

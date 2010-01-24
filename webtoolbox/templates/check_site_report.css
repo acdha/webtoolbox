@@ -1,0 +1,122 @@
+body {
+    background-color: #a2c0e5;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+    font-size: 12px;
+}
+
+#report {
+    background-color: #FFF;
+    border: solid gray 1px;
+    border-collapse: collapse;
+    margin: 1em auto;
+    padding: 1em;
+    width: 800px;
+
+    text-align:left;
+
+    border-radius: 8px;
+    -webkit-border-radius: 8px;
+    -moz-border-radius: 8px;
+
+    box-shadow: 2px 2px 32px rgba(0,0,0,.6);
+    -webkit-box-shadow: 2px 2px 32px rgba(0,0,0,.6);
+}
+
+.details {
+    text-align:center;
+    font-size: 14px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    text-align: center;
+}
+
+h1 {
+    font-size: 32px;
+    text-shadow: #999 2px 2px 2px;
+}
+
+a {
+    color: #3d707a;
+}
+
+a:hover, a:active {
+    color: #bf7d18;
+}
+
+#report > ul {
+    list-style-position: inside;
+    margin: 1em;
+}
+
+ul.url {
+    list-style: square;
+    overflow:hidden;
+}
+
+table {
+    border: solid gray 1px;
+    border-collapse: collapse;
+    margin: 1.25em auto 4em;
+    text-align: left;
+    width: 95%;
+}
+
+tbody > tr:hover {
+    background: #f0f0f0;
+}
+
+thead {
+    background-color: #aaa;
+    font-size: larger;
+    font-weight: 700;
+    line-height: 2em;
+    text-align: center;
+    vertical-align: middle;
+}
+
+tbody tr {
+    border-bottom: 1px dotted #ccc;
+}
+
+tbody {
+    font-size: 12px;
+}
+
+tbody td {
+    padding: 1em;
+    vertical-align: top;
+}
+
+/* Styles for the message columns: */
+tbody > tr > td:first-child {
+    width: 40%;
+    font-style: oblique;
+    text-align: center;
+}
+
+.bad h2 {
+    color: red;
+    font-weight: bolder;
+}
+
+.warning h2 {
+    color: #e9e939;
+    font-weight: bolder;
+}
+
+.toggle {
+    background-color: #e8e8e8;
+    border: #999 solid 1px;
+    color: #000;
+    font-size: small;
+    margin: 4px auto;
+    padding: 3px;
+    text-align: center;
+    white-space: nowrap;
+    width: 8em;
+
+    border-radius: 2px;
+    -webkit-border-radius: 2px;
+    -moz-border-radius: 2px;
+}

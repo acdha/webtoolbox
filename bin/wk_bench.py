@@ -207,7 +207,7 @@ def main():
     webview.initWithFrame_(rect)
 
     webview.setPreferencesIdentifier_('wk_bench')
-    
+
     webview.preferences().setJavaEnabled_(False)
 
     win.setContentView_(webview)

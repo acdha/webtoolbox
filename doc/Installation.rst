@@ -13,7 +13,7 @@ already have them::
 Once they're setup you'll want to create a virtualenv::
 
     mkvirtualenv webtoolbox
-    add2virtualenv /path/to/webtoolbox    
+    add2virtualenv /path/to/webtoolbox
 
 Now you're ready to install our prerequisites::
 

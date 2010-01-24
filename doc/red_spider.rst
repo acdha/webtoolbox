@@ -6,8 +6,8 @@ red_spider
 
 :synopis: Site validation spider based on ``redbot``
 
-`Mark Nottingham <http://mnot.net/>`_ released `redbot <http://mnot.github.com/redbot/>`_ 
-- a modern replacement for the classic `cacheability <http://www.mnot.net/cacheability/>`_ 
+`Mark Nottingham <http://mnot.net/>`_ released `redbot <http://mnot.github.com/redbot/>`_
+- a modern replacement for the classic `cacheability <http://www.mnot.net/cacheability/>`_
 tester. I've been using it at work to audit website performance before
 releases since proper HTTP caching makes an enormous difference in perceived
 site performance.
@@ -31,15 +31,15 @@ well.
 
     Save report to a file instead of stdout
 
-.. cmdoption::    --validate-html       
+.. cmdoption::    --validate-html
 
     Validate HTML using tidylib
 
-.. cmdoption::    --skip-media          
+.. cmdoption::    --skip-media
 
     Skip media files: <img>, <object>, etc.
 
-.. cmdoption::    --skip-resources      
+.. cmdoption::    --skip-resources
 
     Skip resources: <script>, <link>
 
@@ -63,6 +63,6 @@ well.
     Specify a location other than stderr
 
 .. cmdoption:: -v
-.. cmdoption:: --verbosity       
+.. cmdoption:: --verbosity
 
 Increase the amount of information displayed or logged

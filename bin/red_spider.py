@@ -98,7 +98,7 @@ class SpiderReport(object):
             return """<a href="%s">%s</a>""" % (url, title)
 
         # TODO: Switch to a templating system - but which one?
-        template = open(os.path.join(os.path.dirname(__file__), "..", "lib", "red_spider_template.html"))
+        template = open(os.path.join(os.path.dirname(__file__), "..", "webtoolbox", "templates", "red_spider_template.html"))
 
         for line in template:
             if "GENERATED_CONTENT" in line:
@@ -236,7 +236,7 @@ class REDSpider(object):
 
     def report_red_message(self, msg, uri):
         """Unpacks a message as returned in ResourceExpertDroid.messages"""
-        
+
         title   = self.get_loc(msg.summary) % msg.vars
         details = self.get_loc(msg.text) % msg.vars
 
