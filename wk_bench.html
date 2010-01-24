@@ -5,7 +5,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>webtoolbox &mdash; webtoolbox v1.0.0 documentation</title>
+    <title>wk_bench &mdash; webtoolbox v1.0.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -19,8 +19,10 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="webtoolbox v1.0.0 documentation" href="#" />
-    <link rel="next" title="Installation" href="Installation.html" /> 
+    <link rel="top" title="webtoolbox v1.0.0 documentation" href="index.html" />
+    <link rel="up" title="The Tools" href="Tools.html" />
+    <link rel="next" title="log_replay" href="log_replay.html" />
+    <link rel="prev" title="tornado_bench" href="tornado_bench.html" /> 
   </head>
   <body>
     <div class="related">
@@ -33,9 +35,13 @@
           <a href="modindex.html" title="Global Module Index"
              accesskey="M">modules</a> |</li>
         <li class="right" >
-          <a href="Installation.html" title="Installation"
+          <a href="log_replay.html" title="log_replay"
              accesskey="N">next</a> |</li>
-        <li><a href="#">webtoolbox v1.0.0 documentation</a> &raquo;</li> 
+        <li class="right" >
+          <a href="tornado_bench.html" title="tornado_bench"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">webtoolbox v1.0.0 documentation</a> &raquo;</li>
+          <li><a href="Tools.html" accesskey="U">The Tools</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -44,39 +50,28 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="webtoolbox">
-<h1>webtoolbox<a class="headerlink" href="#webtoolbox" title="Permalink to this headline">¶</a></h1>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="Installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference external" href="Tools.html">The Tools</a><ul>
-<li class="toctree-l2"><a class="reference external" href="Tools.html#spiders">Spiders</a><ul>
-<li class="toctree-l3"><a class="reference external" href="check_site.html">check_site</a></li>
-<li class="toctree-l3"><a class="reference external" href="red_spider.html">red_spider</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference external" href="Tools.html#load-generators">Load Generators</a><ul>
-<li class="toctree-l3"><a class="reference external" href="tornado_bench.html">tornado_bench</a></li>
-<li class="toctree-l3"><a class="reference external" href="wk_bench.html">wk_bench</a></li>
-<li class="toctree-l3"><a class="reference external" href="log_replay.html">log_replay</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<div class="section" id="python-modules">
-<h2>Python Modules<a class="headerlink" href="#python-modules" title="Permalink to this headline">¶</a></h2>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="Clients.html">Clients</a></li>
-</ul>
-<div class="section" id="indices-and-tables">
-<h3>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><a class="reference external" href="genindex.html"><em>Index</em></a></li>
-<li><a class="reference external" href="modindex.html"><em>Module Index</em></a></li>
-<li><a class="reference external" href="search.html"><em>Search Page</em></a></li>
-</ul>
-</div>
-</div>
+  <div class="section" id="wk-bench">
+<span id="id1"></span><h1>wk_bench<a class="headerlink" href="#wk-bench" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">synopsis:</th><td class="field-body">Benchmark user-perceived page time for a list of URLs using a true WebKit browser</td>
+</tr>
+</tbody>
+</table>
+<p>Mac OS X-specific tool which uses <a class="reference external" href="http://pyobjc.sourceforge.net/">PyObjC</a>
+to load pages in <a class="reference external" href="http://www.webkit.org">WebKit</a>. Takes URLs on the
+command-line or in a separate file and runs through them as quickly as
+possible, measuring the time it takes from beginning the request until the
+browser fires the <tt class="docutils literal"><span class="pre">didFinishLoadForFrame</span></tt> event, which includes things like
+image loading, Flash, JavaScript, etc. for measuring user-perceptible
+page-load performance.</p>
+<dl class="cmdoption">
+<dt id="cmdoption-wk_bench--help">
+<tt class="descname">--help</tt><tt class="descclassname"></tt><a class="headerlink" href="#cmdoption-wk_bench--help" title="Permalink to this definition">¶</a></dt>
+<dd>Display all available options and full help</dd></dl>
+
 </div>
 
 
@@ -85,23 +80,15 @@
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="#">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="#">webtoolbox</a><ul>
-<li><a class="reference external" href="#python-modules">Python Modules</a><ul>
-<li><a class="reference external" href="#indices-and-tables">Indices and tables</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="tornado_bench.html"
+                                  title="previous chapter">tornado_bench</a></p>
             <h4>Next topic</h4>
-            <p class="topless"><a href="Installation.html"
-                                  title="next chapter">Installation</a></p>
+            <p class="topless"><a href="log_replay.html"
+                                  title="next chapter">log_replay</a></p>
             <h3>This Page</h3>
             <ul class="this-page-menu">
-              <li><a href="_sources/index.txt"
+              <li><a href="_sources/wk_bench.txt"
                      rel="nofollow">Show Source</a></li>
             </ul>
           <div id="searchbox" style="display: none">
@@ -131,9 +118,13 @@
           <a href="modindex.html" title="Global Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="Installation.html" title="Installation"
+          <a href="log_replay.html" title="log_replay"
              >next</a> |</li>
-        <li><a href="#">webtoolbox v1.0.0 documentation</a> &raquo;</li> 
+        <li class="right" >
+          <a href="tornado_bench.html" title="tornado_bench"
+             >previous</a> |</li>
+        <li><a href="index.html">webtoolbox v1.0.0 documentation</a> &raquo;</li>
+          <li><a href="Tools.html" >The Tools</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

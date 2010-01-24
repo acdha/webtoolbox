@@ -5,7 +5,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>webtoolbox &mdash; webtoolbox v1.0.0 documentation</title>
+    <title>Installation &mdash; webtoolbox v1.0.0 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -19,8 +19,9 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="webtoolbox v1.0.0 documentation" href="#" />
-    <link rel="next" title="Installation" href="Installation.html" /> 
+    <link rel="top" title="webtoolbox v1.0.0 documentation" href="index.html" />
+    <link rel="next" title="The Tools" href="Tools.html" />
+    <link rel="prev" title="webtoolbox" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -33,9 +34,12 @@
           <a href="modindex.html" title="Global Module Index"
              accesskey="M">modules</a> |</li>
         <li class="right" >
-          <a href="Installation.html" title="Installation"
+          <a href="Tools.html" title="The Tools"
              accesskey="N">next</a> |</li>
-        <li><a href="#">webtoolbox v1.0.0 documentation</a> &raquo;</li> 
+        <li class="right" >
+          <a href="index.html" title="webtoolbox"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">webtoolbox v1.0.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -44,38 +48,31 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="webtoolbox">
-<h1>webtoolbox<a class="headerlink" href="#webtoolbox" title="Permalink to this headline">¶</a></h1>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="Installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference external" href="Tools.html">The Tools</a><ul>
-<li class="toctree-l2"><a class="reference external" href="Tools.html#spiders">Spiders</a><ul>
-<li class="toctree-l3"><a class="reference external" href="check_site.html">check_site</a></li>
-<li class="toctree-l3"><a class="reference external" href="red_spider.html">red_spider</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference external" href="Tools.html#load-generators">Load Generators</a><ul>
-<li class="toctree-l3"><a class="reference external" href="tornado_bench.html">tornado_bench</a></li>
-<li class="toctree-l3"><a class="reference external" href="wk_bench.html">wk_bench</a></li>
-<li class="toctree-l3"><a class="reference external" href="log_replay.html">log_replay</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<div class="section" id="python-modules">
-<h2>Python Modules<a class="headerlink" href="#python-modules" title="Permalink to this headline">¶</a></h2>
-<ul>
-<li class="toctree-l1"><a class="reference external" href="Clients.html">Clients</a></li>
-</ul>
-<div class="section" id="indices-and-tables">
-<h3>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h3>
-<ul class="simple">
-<li><a class="reference external" href="genindex.html"><em>Index</em></a></li>
-<li><a class="reference external" href="modindex.html"><em>Module Index</em></a></li>
-<li><a class="reference external" href="search.html"><em>Search Page</em></a></li>
-</ul>
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>This project assumes the use of pip, virtualenv and <a class="reference external" href="http://www.doughellmann.com/projects/virtualenvwrapper/">virtualenvwrapper</a>. If you don&#8217;t
+already have them:</p>
+<div class="highlight-python"><pre>easy_install pip
+pip install virtualenv virtualenvwrapper
+. virtualenvwrapper_bashrc
+mkdir ~/.virtualenvs</pre>
 </div>
+<p>Once they&#8217;re setup you&#8217;ll want to create a virtualenv:</p>
+<div class="highlight-python"><pre>mkvirtualenv webtoolbox
+add2virtualenv /path/to/webtoolbox</pre>
+</div>
+<p>Now you&#8217;re ready to install our prerequisites:</p>
+<div class="highlight-python"><pre>pip install -r requirements.pip</pre>
+</div>
+<p><em>Note:</em> Tornado uses <tt class="docutils literal"><span class="pre">pycurl</span></tt>, which may or may not install correctly on a
+Mac using a simple <tt class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">pycurl</span></tt>. If you encounter problems follow the
+instructions in the Tornado documentation.</p>
+<p>To use the <a class="reference external" href="http://mnot.github.com/redbot/">redbot</a>-based tools. This is
+complicated by the fact that redbot hasn&#8217;t been turned into an importable
+module yet:</p>
+<div class="highlight-python"><pre>pip install -e git://github.com/mnot/nbhttp.git@master#egg=nbhttp
+git clone http://github.com/mnot/redbot
+add2virtualenv redbot/src</pre>
 </div>
 </div>
 
@@ -85,23 +82,15 @@
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-            <h3><a href="#">Table Of Contents</a></h3>
-            <ul>
-<li><a class="reference external" href="#">webtoolbox</a><ul>
-<li><a class="reference external" href="#python-modules">Python Modules</a><ul>
-<li><a class="reference external" href="#indices-and-tables">Indices and tables</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="index.html"
+                                  title="previous chapter">webtoolbox</a></p>
             <h4>Next topic</h4>
-            <p class="topless"><a href="Installation.html"
-                                  title="next chapter">Installation</a></p>
+            <p class="topless"><a href="Tools.html"
+                                  title="next chapter">The Tools</a></p>
             <h3>This Page</h3>
             <ul class="this-page-menu">
-              <li><a href="_sources/index.txt"
+              <li><a href="_sources/Installation.txt"
                      rel="nofollow">Show Source</a></li>
             </ul>
           <div id="searchbox" style="display: none">
@@ -131,9 +120,12 @@
           <a href="modindex.html" title="Global Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="Installation.html" title="Installation"
+          <a href="Tools.html" title="The Tools"
              >next</a> |</li>
-        <li><a href="#">webtoolbox v1.0.0 documentation</a> &raquo;</li> 
+        <li class="right" >
+          <a href="index.html" title="webtoolbox"
+             >previous</a> |</li>
+        <li><a href="index.html">webtoolbox v1.0.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

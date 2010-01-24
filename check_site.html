@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>check_site &mdash; webtoolbox v1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '1.0.0',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="webtoolbox v1.0.0 documentation" href="index.html" />
+    <link rel="up" title="The Tools" href="Tools.html" />
+    <link rel="next" title="red_spider" href="red_spider.html" />
+    <link rel="prev" title="The Tools" href="Tools.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="red_spider.html" title="red_spider"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="Tools.html" title="The Tools"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">webtoolbox v1.0.0 documentation</a> &raquo;</li>
+          <li><a href="Tools.html" accesskey="U">The Tools</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="check-site">
+<span id="id1"></span><h1>check_site<a class="headerlink" href="#check-site" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">synopsis:</th><td class="field-body">Site validation spider</td>
+</tr>
+</tbody>
+</table>
+<p>A site validator which uses <a title="webtoolbox.clients.Spider" class="reference external" href="Clients.html#webtoolbox.clients.Spider"><tt class="xref docutils literal"><span class="pre">webtoolbox.clients.Spider</span></tt></a> to process an entire
+site and checking for bad links, 404s, and optionally HTML validation. It
+generates either text or HTML reports and can be used to generate lists of
+site URLs for use with load-testing tools like <a class="reference external" href="tornado_bench.html#tornado-bench"><em>tornado_bench</em></a> or
+<a class="reference external" href="wk_bench.html#wk-bench"><em>wk_bench</em></a>.</p>
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--help">
+<tt class="descname">--help</tt><tt class="descclassname"></tt><a class="headerlink" href="#cmdoption-check_site--help" title="Permalink to this definition">¶</a></dt>
+<dd>Display all available options and full help</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--validate-html">
+<tt class="descname">--validate-html</tt><tt class="descclassname"></tt><a class="headerlink" href="#cmdoption-check_site--validate-html" title="Permalink to this definition">¶</a></dt>
+<dd>Process all HTML using <a class="reference external" href="http://tidy.sourceforge.net">HTML Tidy</a> and
+report any validation errors</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--format">
+<tt class="descname">--format</tt><tt class="descclassname">=REPORT_FORMAT</tt><a class="headerlink" href="#cmdoption-check_site--format" title="Permalink to this definition">¶</a></dt>
+<dd>Generate the report as HTML or text</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--report">
+<tt class="descname">--report</tt><tt class="descclassname">=REPORT_FILE</tt><a class="headerlink" href="#cmdoption-check_site--report" title="Permalink to this definition">¶</a></dt>
+<dd>Save report to a file instead of stdout</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--skip-media">
+<tt class="descname">--skip-media</tt><tt class="descclassname"></tt><a class="headerlink" href="#cmdoption-check_site--skip-media" title="Permalink to this definition">¶</a></dt>
+<dd>Skip media files: &lt;img&gt;, &lt;object&gt;, etc.</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--skip-resources">
+<tt class="descname">--skip-resources</tt><tt class="descclassname"></tt><a class="headerlink" href="#cmdoption-check_site--skip-resources" title="Permalink to this definition">¶</a></dt>
+<dd>Skip resources: &lt;script&gt;, &lt;link&gt;</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--skip-link-re">
+<tt class="descname">--skip-link-re</tt><tt class="descclassname">=SKIP_LINK_RE</tt><a class="headerlink" href="#cmdoption-check_site--skip-link-re" title="Permalink to this definition">¶</a></dt>
+<dd>Skip links whose URL matches the specified regular
+expression</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--save-page-list">
+<tt class="descname">--save-page-list</tt><tt class="descclassname">=PAGE_LIST</tt><a class="headerlink" href="#cmdoption-check_site--save-page-list" title="Permalink to this definition">¶</a></dt>
+<dd>Save a list of URLs for HTML pages in the specified
+file for use with a tool like <a class="reference external" href="tornado_bench.html#tornado-bench"><em>tornado_bench</em></a> or <a class="reference external" href="wk_bench.html#wk-bench"><em>wk_bench</em></a></dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--save-resource-list">
+<tt class="descname">--save-resource-list</tt><tt class="descclassname">=RESOURCE_LIST</tt><a class="headerlink" href="#cmdoption-check_site--save-resource-list" title="Permalink to this definition">¶</a></dt>
+<dd>Save a list of URLs for pages resources in the
+specified file</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--log">
+<tt class="descname">--log</tt><tt class="descclassname">=LOG_FILE</tt><a class="headerlink" href="#cmdoption-check_site--log" title="Permalink to this definition">¶</a></dt>
+<dd>Specify a location other than stderr</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site-v">
+<tt class="descname">-v</tt><tt class="descclassname"></tt><a class="headerlink" href="#cmdoption-check_site-v" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-check_site--verbosity">
+<tt class="descname">--verbosity</tt><tt class="descclassname"></tt><a class="headerlink" href="#cmdoption-check_site--verbosity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Increase the amount of information displayed or logged</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="Tools.html"
+                                  title="previous chapter">The Tools</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="red_spider.html"
+                                  title="next chapter">red_spider</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/check_site.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="red_spider.html" title="red_spider"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="Tools.html" title="The Tools"
+             >previous</a> |</li>
+        <li><a href="index.html">webtoolbox v1.0.0 documentation</a> &raquo;</li>
+          <li><a href="Tools.html" >The Tools</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2010, Chris Adams.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+    </div>
+  </body>
+</html>

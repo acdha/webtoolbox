@@ -1,0 +1,221 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Clients &mdash; webtoolbox v1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '1.0.0',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="webtoolbox v1.0.0 documentation" href="index.html" />
+    <link rel="prev" title="log_replay" href="log_replay.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="log_replay.html" title="log_replay"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">webtoolbox v1.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-webtoolbox.clients">
+<h1>Clients<a class="headerlink" href="#module-webtoolbox.clients" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="webtoolbox.clients.Retriever">
+<em class="property">class </em><tt class="descclassname">webtoolbox.clients.</tt><tt class="descname">Retriever</tt><big>(</big><em>log_name='Retriever'</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#webtoolbox.clients.Retriever" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fast, asynchronous URL retriever</p>
+<dl class="docutils">
+<dt>Usage is simple:</dt>
+<dd><ol class="first last arabic simple">
+<li>Create a Retriever, optionally providing a log_name for logging and
+any of the kwargs accepted by <tt class="xref docutils literal"><span class="pre">tornado.httpclient.AsyncHTTPClient</span></tt></li>
+<li>Add request processor callbacks to retriever.response_processors.
+Each will be called with args=(request, response)</li>
+<li>Load one or more URLs using retriever.queue_urls (your response
+processors may add more as desired)</li>
+<li>Call retriever.run(), which will block until all URLs have been
+processed</li>
+</ol>
+</dd>
+</dl>
+<dl class="method">
+<dt id="webtoolbox.clients.Retriever.queue">
+<tt class="descname">queue</tt><big>(</big><em>url</em><big>)</big><a class="headerlink" href="#webtoolbox.clients.Retriever.queue" title="Permalink to this definition">¶</a></dt>
+<dd>Queue up a list of URLs to retrieve</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="webtoolbox.clients.Spider">
+<em class="property">class </em><tt class="descclassname">webtoolbox.clients.</tt><tt class="descname">Spider</tt><big>(</big><em>log_name='Spider'</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#webtoolbox.clients.Spider" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retriever-based Spider</p>
+<p>Starts with an initial list of URLs and crawls them asynchronously,
+providing results to <a title="webtoolbox.clients.Spider.header_processors" class="reference internal" href="#webtoolbox.clients.Spider.header_processors"><tt class="xref docutils literal"><span class="pre">header_processors</span></tt></a>, <a title="webtoolbox.clients.Spider.html_processors" class="reference internal" href="#webtoolbox.clients.Spider.html_processors"><tt class="xref docutils literal"><span class="pre">html_processors</span></tt></a> and
+<a title="webtoolbox.clients.Spider.tree_processors" class="reference internal" href="#webtoolbox.clients.Spider.tree_processors"><tt class="xref docutils literal"><span class="pre">tree_processors</span></tt></a> which implement additional functionality.</p>
+<p><a class="reference external" href="check_site.html#check-site"><em>check_site</em></a> demonstrates the HTML processor feature to report HTML
+validation errors from pytidylib.</p>
+<dl class="attribute">
+<dt id="webtoolbox.clients.Spider.allowed_hosts">
+<tt class="descname">allowed_hosts</tt><a class="headerlink" href="#webtoolbox.clients.Spider.allowed_hosts" title="Permalink to this definition">¶</a></dt>
+<dd>This will be automatically populated from the inital batch of URLs</dd></dl>
+
+<dl class="method">
+<dt id="webtoolbox.clients.Spider.guess_charset">
+<tt class="descname">guess_charset</tt><big>(</big><em>response</em><big>)</big><a class="headerlink" href="#webtoolbox.clients.Spider.guess_charset" title="Permalink to this definition">¶</a></dt>
+<dd>Does the ugly business of attempting to figure out how to decode the
+response to a unicode string</dd></dl>
+
+<dl class="attribute">
+<dt id="webtoolbox.clients.Spider.header_processors">
+<tt class="descname">header_processors</tt><a class="headerlink" href="#webtoolbox.clients.Spider.header_processors" title="Permalink to this definition">¶</a></dt>
+<dd>Header processors will be called with (URL, HTTP Headers)</dd></dl>
+
+<dl class="attribute">
+<dt id="webtoolbox.clients.Spider.html_processors">
+<tt class="descname">html_processors</tt><a class="headerlink" href="#webtoolbox.clients.Spider.html_processors" title="Permalink to this definition">¶</a></dt>
+<dd>HTML processors will be called with unprocessed HTML as a UTF-8 string</dd></dl>
+
+<dl class="attribute">
+<dt id="webtoolbox.clients.Spider.log">
+<tt class="descname">log</tt><a class="headerlink" href="#webtoolbox.clients.Spider.log" title="Permalink to this definition">¶</a></dt>
+<dd>Logger used to report progress &amp; errors</dd></dl>
+
+<dl class="method">
+<dt id="webtoolbox.clients.Spider.process_page">
+<tt class="descname">process_page</tt><big>(</big><em>request</em>, <em>response</em><big>)</big><a class="headerlink" href="#webtoolbox.clients.Spider.process_page" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback used to process a URL after it&#8217;s been retrieved</p>
+<dl class="docutils">
+<dt>Rough sequence:</dt>
+<dd><ol class="first last arabic simple">
+<li>Process errors and redirects</li>
+<li>Process non-HTML content</li>
+<li>Convert retrieved HTML to UTF-8</li>
+<li>Process HTML through the defined <a title="webtoolbox.clients.Spider.html_processors" class="reference internal" href="#webtoolbox.clients.Spider.html_processors"><tt class="xref docutils literal"><span class="pre">html_processors</span></tt></a></li>
+<li>Create an <tt class="docutils literal"><span class="pre">lxml</span></tt> tree</li>
+<li>Convert all links to absolute URLs</li>
+<li>Queue any unseen URLs for retrieval</li>
+<li>Pass lxml tree to <a title="webtoolbox.clients.Spider.tree_processors" class="reference internal" href="#webtoolbox.clients.Spider.tree_processors"><tt class="xref docutils literal"><span class="pre">tree_processors</span></tt></a></li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="webtoolbox.clients.Spider.queue">
+<tt class="descname">queue</tt><big>(</big><em>url</em><big>)</big><a class="headerlink" href="#webtoolbox.clients.Spider.queue" title="Permalink to this definition">¶</a></dt>
+<dd>Add a URL to the queue to be retrieved</dd></dl>
+
+<dl class="method">
+<dt id="webtoolbox.clients.Spider.run">
+<tt class="descname">run</tt><big>(</big><em>urls</em><big>)</big><a class="headerlink" href="#webtoolbox.clients.Spider.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start the spider with the provided list of URLs</p>
+<p>Block until the spider has crawled the entire site</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="webtoolbox.clients.Spider.site_structure">
+<tt class="descname">site_structure</tt><a class="headerlink" href="#webtoolbox.clients.Spider.site_structure" title="Permalink to this definition">¶</a></dt>
+<dd>All urls processed by this spider as a URL-keyed list of :class:URLStatus elements</dd></dl>
+
+<dl class="attribute">
+<dt id="webtoolbox.clients.Spider.skip_link_re">
+<tt class="descname">skip_link_re</tt><a class="headerlink" href="#webtoolbox.clients.Spider.skip_link_re" title="Permalink to this definition">¶</a></dt>
+<dd>URLs whose path matches this regular expression won&#8217;t be followed:</dd></dl>
+
+<dl class="attribute">
+<dt id="webtoolbox.clients.Spider.skip_media">
+<tt class="descname">skip_media</tt><a class="headerlink" href="#webtoolbox.clients.Spider.skip_media" title="Permalink to this definition">¶</a></dt>
+<dd>If true, don&#8217;t retrieve media files (i.e. &lt;img&gt;, &lt;object&gt;, &lt;embed&gt;, etc.)</dd></dl>
+
+<dl class="attribute">
+<dt id="webtoolbox.clients.Spider.skip_resources">
+<tt class="descname">skip_resources</tt><a class="headerlink" href="#webtoolbox.clients.Spider.skip_resources" title="Permalink to this definition">¶</a></dt>
+<dd>If true, don&#8217;t process non-media components (i.e. stylesheets or CSS)</dd></dl>
+
+<dl class="attribute">
+<dt id="webtoolbox.clients.Spider.tree_processors">
+<tt class="descname">tree_processors</tt><a class="headerlink" href="#webtoolbox.clients.Spider.tree_processors" title="Permalink to this definition">¶</a></dt>
+<dd>Tree processors will be called with the full lxml tree, which can be</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="log_replay.html"
+                                  title="previous chapter">log_replay</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/Clients.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="log_replay.html" title="log_replay"
+             >previous</a> |</li>
+        <li><a href="index.html">webtoolbox v1.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2010, Chris Adams.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+    </div>
+  </body>
+</html>

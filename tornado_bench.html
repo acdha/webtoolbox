@@ -1,0 +1,143 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>tornado_bench &mdash; webtoolbox v1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '#',
+        VERSION:     '1.0.0',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="webtoolbox v1.0.0 documentation" href="index.html" />
+    <link rel="up" title="The Tools" href="Tools.html" />
+    <link rel="next" title="wk_bench" href="wk_bench.html" />
+    <link rel="prev" title="red_spider" href="red_spider.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             accesskey="M">modules</a> |</li>
+        <li class="right" >
+          <a href="wk_bench.html" title="wk_bench"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="red_spider.html" title="red_spider"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">webtoolbox v1.0.0 documentation</a> &raquo;</li>
+          <li><a href="Tools.html" accesskey="U">The Tools</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tornado-bench">
+<span id="id1"></span><h1>tornado_bench<a class="headerlink" href="#tornado-bench" title="Permalink to this headline">¶</a></h1>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">synopsis:</th><td class="field-body">Server crushing URL retriever</td>
+</tr>
+</tbody>
+</table>
+<p>A command-line utility which accepts a list of URLs and retrieves them as
+quickly as possible. Most of the functionality is provided by
+<a title="webtoolbox.clients.Retriever" class="reference external" href="Clients.html#webtoolbox.clients.Retriever"><tt class="xref docutils literal"><span class="pre">webtoolbox.clients.Retriever</span></tt></a>, which uses Tornado&#8217;s non-blocking
+<tt class="docutils literal"><span class="pre">pycurl</span></tt>-based HTTP client and delivers pretty high performance (thousands
+of requests per second on my laptop).</p>
+<dl class="cmdoption">
+<dt id="cmdoption-tornado_bench--help">
+<tt class="descname">--help</tt><tt class="descclassname"></tt><a class="headerlink" href="#cmdoption-tornado_bench--help" title="Permalink to this definition">¶</a></dt>
+<dd>Display all available options and full help</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-tornado_bench--random">
+<tt class="descname">--random</tt><tt class="descclassname"></tt><a class="headerlink" href="#cmdoption-tornado_bench--random" title="Permalink to this definition">¶</a></dt>
+<dd>Randomize the list of URLs before processing</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption-tornado_bench--repeat">
+<tt class="descname">--repeat</tt><tt class="descclassname">=COUNT</tt><a class="headerlink" href="#cmdoption-tornado_bench--repeat" title="Permalink to this definition">¶</a></dt>
+<dd>Repeat the entire list of URLs COUNT times</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="red_spider.html"
+                                  title="previous chapter">red_spider</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="wk_bench.html"
+                                  title="next chapter">wk_bench</a></p>
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/tornado_bench.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="modindex.html" title="Global Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="wk_bench.html" title="wk_bench"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="red_spider.html" title="red_spider"
+             >previous</a> |</li>
+        <li><a href="index.html">webtoolbox v1.0.0 documentation</a> &raquo;</li>
+          <li><a href="Tools.html" >The Tools</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2010, Chris Adams.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.4.
+    </div>
+  </body>
+</html>
