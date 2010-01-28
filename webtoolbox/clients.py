@@ -252,8 +252,13 @@ class Spider(Retriever):
 
         content_length = int(response.headers.get('Content-Length', -1))
 
-        if content_length > -1 and len(response.body) != content_length:
-            self.log.warning("%s: Content-Length mismatch %d bytes != %d received", url, content_length, len(response.body))
+        # TODO: In theory these should be identical but things like gzip
+        # transfer encoding are non-trivial to handle with the information we
+        # have visible at this point. We'll look for incomplete responses and
+        # hope that PyCurl does the right thing and raise an error if we get
+        # partial/bogus encoding.
+        if content_length > -1 and len(response.body) < content_length:
+            self.log.warning("%s: possible partial content: Content-Length = %d, body length = %d", url, content_length, len(response.body))
 
         content_type = response.headers.get('Content-Type', None)
 
