@@ -1,11 +1,14 @@
 pycurl>=7.16.4
 
-tornado
+-e git://github.com/facebook/tornado.git#egg=tornado
 
 # Until lxml works with the current html5lib we need the old one:
 http://html5lib.googlecode.com/files/html5lib-0.11.1.zip#egg=html5lib-0.11-1
 
 lxml
+chardet
+
+pytidylib
 
 # Used to generate HTML reports:
 jinja2
