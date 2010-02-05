@@ -283,7 +283,7 @@ class Spider(Retriever):
                 logging.exception("Header processor %s: unhandled exception", p)
                 raise
 
-        charset = self.guess_charset(response)
+        charset = self.guess_charset(response) or "latin-1"
 
         try:
             html = unicode(response.body, charset)
