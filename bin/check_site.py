@@ -207,6 +207,7 @@ def configure_logging(options):
 def main():
     parser = optparse.OptionParser(__doc__.strip())
 
+    parser.add_option("--max-connections", type="int", default="2", help="Set the number of simultaneous connections to the remote server(s)")
     parser.add_option("--format", dest="report_format", default="text", help='Generate the report as HTML or text')
     parser.add_option("-o", "--report", "--output", dest="report_file", default=sys.stdout, help='Save report to a file instead of stdout')
     parser.add_option("--validate-html", action="store_true", default=False, help="Validate HTML using tidylib")
@@ -244,7 +245,7 @@ def main():
             logging.critical("Cannot perform HTML validation. Try `pip install pytidylib` or see http://countergram.com/software/pytidylib")
             sys.exit(42)
 
-    spider = QASpider(validate_html=options.validate_html)
+    spider = QASpider(validate_html=options.validate_html, max_simultaneous_connections=options.max_connections)
     spider.skip_media     = options.skip_media
     spider.skip_resources = options.skip_resources
 

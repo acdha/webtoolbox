@@ -15,6 +15,11 @@ site URLs for use with load-testing tools like :ref:`tornado_bench` or
 
    Display all available options and full help
 
+.. cmdoption:: -v
+.. cmdoption:: --verbosity
+
+    Increase the amount of information displayed or logged
+
 .. cmdoption:: --validate-html
 
    Process all HTML using `HTML Tidy <http://tidy.sourceforge.net>`_ and
@@ -55,7 +60,7 @@ site URLs for use with load-testing tools like :ref:`tornado_bench` or
 
     Specify a location other than stderr
 
-.. cmdoption:: -v
-.. cmdoption:: --verbosity
+.. cmdoption:: --simultaneous-connections=2
 
-Increase the amount of information displayed or logged
+    Adjust the number of simultaneous connections which will be opened to the
+    server
