@@ -72,11 +72,17 @@ class Retriever(object):
 
         self.log.info("Completed IOLoop after processing %d URLs in %0.2f seconds", self.processed, elapsed)
 
-    def queue(self, url):
+    def queue(self, url, **kwargs):
         """Queue up a list of URLs to retrieve"""
+        request_args = {
+                "follow_redirects": True,
+                "max_redirects": 5,
+                "request_timeout": 15
+        }
+        request_args.update(kwargs)
 
         self.http_client.fetch(
-            HTTPRequest(url, follow_redirects=True, max_redirects=5),
+            HTTPRequest(url, **request_args),
             self.response_handler
         )
 
@@ -187,7 +193,7 @@ class Spider(Retriever):
 
         if url not in self.url_history:
             self.url_history.add(url)
-            super(Spider, self).queue(url)
+            super(Spider, self).queue(url, request_timeout=60)
 
     def guess_charset(self, response):
         """
