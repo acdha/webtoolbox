@@ -1,4 +1,8 @@
 # encoding: utf-8
+"""
+HTTP clients designed for easy tool building
+"""
+
 
 from urlparse import urlparse, urlunparse, urldefrag
 from collections import defaultdict
