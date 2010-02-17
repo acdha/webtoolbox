@@ -16,6 +16,7 @@ from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 #: Light-weight class used for reporting purposes
 class URLStatus(object):
     code = None
+    time = None
 
     #: Referrers list will be populated as we encounter them:
     referrers = set()
@@ -244,6 +245,7 @@ class Spider(Retriever):
         url = response.effective_url
 
         self.site_structure[url].code = response.code
+        self.site_structure[url].time = response.request_time
 
         if not url == request.url:
             if response.error:
