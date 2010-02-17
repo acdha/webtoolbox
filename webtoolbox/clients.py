@@ -324,7 +324,11 @@ class Spider(Retriever):
             # Reconstruct the URL to remove fragments and normalize alternate
             # forms which are equivalent. e.g. http://example.com/foo? and
             # http://example.com/foo are considered to be the same
-            normalized_url = urldefrag(urlunparse(link_p))[0]
+
+            # Avoid wasting time reprocessing anchors, which are a browser-level behaviour:
+            normalized_url = urldefrag(urlunparse((
+             link_p.scheme, link_p.netloc, link_p.path, link_p.params, link_p.query, ""
+            )))[0]
 
             self.site_structure[url].links.add(normalized_url)
 
