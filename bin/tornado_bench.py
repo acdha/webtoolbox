@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
-"""
+u"""
 High-performance server-crushing tool
 
 Usage:
