@@ -16,6 +16,6 @@ Load Generators
 .. toctree::
    :maxdepth: 3
 
-   tornado_bench
+   http_bench
    wk_bench
    log_replay

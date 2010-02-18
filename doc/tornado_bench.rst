@@ -1,7 +1,7 @@
-.. program:: tornado_bench
-.. _tornado_bench:
+.. program:: http_bench
+.. _http_bench:
 
-tornado_bench
+http_bench
 =============
 
 :synopsis: Server crushing URL retriever

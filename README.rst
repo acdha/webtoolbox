@@ -40,7 +40,7 @@ check_site
 A site validator which uses ``webclient.clients.Spider`` to process an entire
 site and checking for bad links, 404s, and optionally HTML validation. It
 generates either text or HTML reports and can be used to generate lists of
-site URLs for use with load-testing tools like ``tornado_bench`` or
+site URLs for use with load-testing tools like ``http_bench`` or
 ``wk_bench``.
 
 Run ``check_site.py --help`` to see the available options
@@ -63,7 +63,7 @@ well.
 
 Run ``red_spider.py --help`` to see the available options. Key features
 include the ability to skip media and save lists of URLs for use with tools
-like ``wk_bench`` or ``tornado_bench``.
+like ``wk_bench`` or ``http_bench``.
 
 log_replay
 ----------
@@ -75,13 +75,13 @@ of the simulated virtual time.
 
 Run ``log_replay.py --help`` to see the available options
 
-tornado_bench
+http_bench
 -------------
 
 Also uses Tornado's non-blocking HTTP client, this program simply takes a big
 list of URLs and simply retrieves them as quickly as possible.
 
-Run ``tornado_bench.py --help`` to see the available options
+Run ``http_bench.py --help`` to see the available options
 
 wk_bench
 --------
