@@ -14,7 +14,11 @@ import time
 import chardet
 import lxml.html.html5parser
 
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from twisted.internet import reactor
+from twisted.web.client import getPage
+from twisted.internet.defer import DeferredSemaphore
+from twisted.web.http_headers import Headers
+from twisted.internet.error import ReactorNotRunning
 
 
 #: Light-weight class used for reporting purposes
@@ -27,14 +31,13 @@ class URLStatus(object):
     #: Link list will be populated during the link walk stage:
     links = set()
 
-
 class Retriever(object):
     """
     Fast, asynchronous URL retriever
 
     Usage is simple:
         1. Create a Retriever, optionally providing a log_name for logging and
-           any of the kwargs accepted by :class:`tornado.httpclient.AsyncHTTPClient`
+           a value for max_simultaneous_connections
 
         2. Add request processor callbacks to retriever.response_processors.
            Each will be called with args=(request, response)
@@ -57,11 +60,12 @@ class Retriever(object):
     http_client = None
 
     response_processors = list()
+    error_processors = list()
 
     log = None
 
-    def __init__(self, log_name="Retriever", **kwargs):
-        self.http_client = AsyncHTTPClient(**kwargs)
+    def __init__(self, log_name="Retriever", max_simultaneous_connections=4, max_clients=None):
+        self._semaphore = DeferredSemaphore(max_simultaneous_connections)
         self.log = logging.getLogger(log_name)
 
     @property
@@ -72,7 +76,7 @@ class Retriever(object):
         self.log.info("Starting with %d queued URLs", self.queued)
 
         start_time = time.time()
-        self.http_client.io_loop.start()
+        reactor.run()
         elapsed = time.time() - start_time
 
         self.log.info("Completed after processing %d URLs in %0.2f seconds", self.processed, elapsed)
@@ -80,36 +84,57 @@ class Retriever(object):
     def queue(self, url, **kwargs):
         """Queue up a list of URLs to retrieve"""
         request_args = {
-                "follow_redirects": True,
-                "max_redirects": 5,
-                "request_timeout": 15
+                "followRedirect": True,
+                "redirectLimit": 5,
+                "timeout": 15
         }
         request_args.update(kwargs)
 
-        self.http_client.fetch(
-            HTTPRequest(url, **request_args),
-            self.response_handler
-        )
+        d = self._semaphore.run(getPage, url, **kwargs)
+
+        d.addCallback(self.response_handler, url, start_time=time.time())
+        d.addErrback(self.error_handler, url)
 
         self.queued += 1
 
-    def response_handler(self, response):
+    def error_handler(self, error, url):
         self.processed += 1
-        if response.error:
-            self.errors += 1
+        self.errors += 1
 
-        self.log.info("Retrieved %s (elapsed=%0.2f, status=%s)", response.request.url, response.request_time, response.code)
+        logging.warning("Error retrieving %s: %s", url, error)
+
+        for p in self.error_processors:
+            try:
+                p(url, error)
+            except:
+                self.log.exception("Aborting due to unhandled exception in error processor %s", p)
+                reactor.stop()
+                raise
+
+        if self.processed >= self.queued:
+            try:
+                reactor.stop()
+            except ReactorNotRunning:
+                pass
+
+    def response_handler(self, response, url, start_time=None):
+        self.processed += 1
+
+        self.log.debug("Retrieved %s (elapsed=%0.2f)", url, time.time() - start_time)
 
         for p in self.response_processors:
             try:
-                p(response.request, response)
+                p(url, response)
             except:
-                self.log.exception("Aborting due to unhandled exception in processor %s", p)
-                self.http_client.io_loop.stop()
+                self.log.exception("Aborting due to unhandled exception in response processor %s", p)
+                reactor.stop()
                 raise
 
-        if self.processed == self.queued:
-            self.http_client.io_loop.stop()
+        if self.processed >= self.queued:
+            try:
+                reactor.stop()
+            except ReactorNotRunning:
+                pass
 
 
 class Spider(Retriever):

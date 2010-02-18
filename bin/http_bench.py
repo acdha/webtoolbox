@@ -20,12 +20,6 @@ from webtoolbox.clients import Retriever
 __version__ = "0.2"
 
 def main(argv=None):
-    try:
-        import tornado
-    except ImportError, e:
-        logging.critical("Couldn't import Tornado (try `easy_install tornado`): %s", e)
-        sys.exit(99)
-
     cmdparser = optparse.OptionParser(__doc__.strip(), version="http_bench %s" % __version__)
     cmdparser.add_option("--verbosity", "-v", "--verbose", action="count", help="Display more progress information")
     cmdparser.add_option("--save-bad-urls", type="string", help="Save all URLs which returned errors to the provided filename")
@@ -59,17 +53,19 @@ def main(argv=None):
         good_urls = set()
         bad_urls = set()
 
-        def __call__(self, request, response):
+        def handle_response(self, url, response):
             self.total += 1
-            if response.error:
-                self.errors += 1
-                self.bad_urls.add(request.url)
-            else:
-                self.good_urls.add(request.url)
+            self.good_urls.add(url)
+
+        def handle_error(self, url, error):
+            self.total += 1
+            self.errors += 1
+            self.bad_urls.add(url)
 
     stats = StatsProcessor()
 
-    fetcher.response_processors.append(stats)
+    fetcher.response_processors.append(stats.handle_response)
+    fetcher.error_processors.append(stats.handle_error)
 
     urls = list()
 
