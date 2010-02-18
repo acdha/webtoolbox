@@ -69,13 +69,13 @@ class Retriever(object):
         return self.processed == self.queued
 
     def run(self):
-        self.log.info("Starting IOLoop with %d queued URLs", self.queued)
+        self.log.info("Starting with %d queued URLs", self.queued)
 
         start_time = time.time()
         self.http_client.io_loop.start()
         elapsed = time.time() - start_time
 
-        self.log.info("Completed IOLoop after processing %d URLs in %0.2f seconds", self.processed, elapsed)
+        self.log.info("Completed after processing %d URLs in %0.2f seconds", self.processed, elapsed)
 
     def queue(self, url, **kwargs):
         """Queue up a list of URLs to retrieve"""
@@ -248,6 +248,8 @@ class Spider(Retriever):
 
         url = response.effective_url
 
+        assert url.startswith("http://"), "Don't know how to handle URL: %s" % url
+
         self.site_structure[url].code = response.code
         self.site_structure[url].time = response.request_time
 
@@ -279,6 +281,7 @@ class Spider(Retriever):
             return
 
         if not content_type.startswith("text/html"):
+            # TODO: Add media processors or simply a generic response processor?
             self.log.info("Done processing %s resource %s", content_type, url)
             return
 
