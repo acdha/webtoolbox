@@ -62,11 +62,15 @@ class Retriever(object):
     response_processors = list()
     error_processors = list()
 
+    request_timeout = 15
+
     log = None
 
-    def __init__(self, log_name="Retriever", max_simultaneous_connections=4, max_clients=None):
+    def __init__(self, log_name="Retriever", max_simultaneous_connections=4, max_clients=None, request_timeout=15):
         self._semaphore = DeferredSemaphore(max_simultaneous_connections)
         self.log = logging.getLogger(log_name)
+
+        self.request_timeout = request_timeout
 
     @property
     def completed(self):
@@ -86,7 +90,7 @@ class Retriever(object):
         request_args = {
                 "followRedirect": True,
                 "redirectLimit": 5,
-                "timeout": 15
+                "timeout": kwargs.pop("request_timeout", self.request_timeout)
         }
         request_args.update(kwargs)
 
