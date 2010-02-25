@@ -80,7 +80,7 @@ class Retriever(object):
     def queue(self, url, **kwargs):
         """Queue up a list of URLs to retrieve"""
         request_args = {
-                "follow_redirects": True,
+                "follow_redirects": False,
                 "max_redirects": 5,
                 "request_timeout": 15
         }
@@ -248,21 +248,32 @@ class Spider(Retriever):
 
         url = response.effective_url
 
-        assert url.startswith("http://"), "Don't know how to handle URL: %s" % url
+        # If follow_redirects=False, our effective_url won't be automatically updated:
+        if response.code in (301, 302):
+            url = response.headers['Location']
+            self.redirect_map[request.url] = url
+
+        parsed_url = urlparse(url)
 
         self.site_structure[url].code = response.code
         self.site_structure[url].time = response.request_time
 
-        if not url == request.url:
-            if response.error:
-                self.log.warning("%s: redirected to %d page %s", request.url, response.code, response.effective_url)
-                return
+        if not parsed_url.scheme == "http":
+            self.log.error("Skipping %s: can't handle non HTTP URLs", url)
+            return
+
+        if url != request.url:
+            if not parsed_url.netloc or parsed_url.netloc in self.allowed_hosts:
+                self.queue(url)
             else:
-                self.log.info("%s: redirected to %s", request.url, response.effective_url)
-                self.redirect_map[request.url] = response.effective_url
+                # TODO: Add an option to follow links for off-site redirect validation
+                self.log.info("Not following external redirect from %s to %s", request.url, url)
+            return
         elif response.error:
             self.log.error("Unable to retrieve %s: %d %s", url, response.code, response.error)
             return
+
+        assert url == request.url
 
         content_length = int(response.headers.get('Content-Length', -1))
 
