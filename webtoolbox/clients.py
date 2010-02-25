@@ -300,7 +300,7 @@ class Spider(Retriever):
             try:
                 p(url, response.headers)
             except:
-                logging.exception("Header processor %s: unhandled exception", p)
+                self.log.exception("Header processor %s: unhandled exception", p)
                 raise
 
         charset = self.guess_charset(response) or "latin-1"
@@ -309,7 +309,6 @@ class Spider(Retriever):
             html = unicode(response.body, charset)
         except UnicodeDecodeError, e:
             self.log.error("%s: skipping page - unable to decode body as %s: %s", url, charset, e)
-            import code; code.interact(local=dict(locals().items() + globals().items()))
             return
 
         html, junk_count = self.CONTROL_CHAR_RE.subn(' ', html)
@@ -320,7 +319,7 @@ class Spider(Retriever):
             try:
                 html = p(url, html) or html
             except:
-                logging.exception("HTML processor %s: unhandled exception", p)
+                self.log.exception("HTML processor %s: unhandled exception", p)
                 raise
 
         self.log.debug("%s: Parsing %d bytes of HTML", url, len(html))
@@ -377,5 +376,5 @@ class Spider(Retriever):
             try:
                 p(url, tree)
             except:
-                logging.exception("Tree processor %s: unhandled exception", p)
+                self.log.exception("Tree processor %s: unhandled exception", p)
                 raise
