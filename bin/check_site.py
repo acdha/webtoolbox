@@ -15,12 +15,10 @@ Currently checks:
 
 """
 
-from cgi import escape
 from collections import defaultdict
 
 import logging
 import optparse
-import os
 import re
 import sys
 import time
@@ -210,6 +208,7 @@ def main():
     parser.add_option("--max-connections", type="int", default="2", help="Set the number of simultaneous connections to the remote server(s)")
     parser.add_option("--format", dest="report_format", default="text", help='Generate the report as HTML or text')
     parser.add_option("-o", "--report", "--output", dest="report_file", default=sys.stdout, help='Save report to a file instead of stdout')
+    parser.add_option("--follow-offsite-redirects", action="store_true", default=False, help="Follow redirects which lead to outside servers to check for 404s")
     parser.add_option("--validate-html", action="store_true", default=False, help="Validate HTML using tidylib")
     parser.add_option("--skip-media", action="store_true", default=False, help="Skip media files: <img>, <object>, etc.")
     parser.add_option("--skip-resources", action="store_true", default=False, help="Skip resources: <script>, <link>")
@@ -246,8 +245,9 @@ def main():
             sys.exit(42)
 
     spider = QASpider(validate_html=options.validate_html, max_simultaneous_connections=options.max_connections)
-    spider.skip_media     = options.skip_media
+    spider.skip_media = options.skip_media
     spider.skip_resources = options.skip_resources
+    spider.follow_offsite_redirects = options.follow_offsite_redirects
 
     if options.skip_link_re:
         i = options.skip_link_re

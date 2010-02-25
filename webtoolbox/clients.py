@@ -131,6 +131,11 @@ class Spider(Retriever):
     # links or simply record them.
     allowed_hosts = set()
 
+    #: This flag controls whether we'll follow redirects to pages which are
+    # not in allowed_hosts. It defaults to off to avoid hammering third-party
+    # servers but you might want to check them for reporting purposes:
+    follow_offsite_redirects = False
+
     #: All urls processed by this spider as a URL-keyed list of :class:URLStatus elements
     site_structure = defaultdict(URLStatus)
     url_history = set()
@@ -265,8 +270,9 @@ class Spider(Retriever):
         if url != request.url:
             if not parsed_url.netloc or parsed_url.netloc in self.allowed_hosts:
                 self.queue(url)
+            elif self.follow_offsite_redirects:
+                self.queue(url)
             else:
-                # TODO: Add an option to follow links for off-site redirect validation
                 self.log.info("Not following external redirect from %s to %s", request.url, url)
             return
         elif response.error:
