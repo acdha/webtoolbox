@@ -73,10 +73,16 @@ class SpiderReport(object):
             self.generate_text(output)
 
     def generate_html(self, output):
+        self.generate_report(output, "check_site_report.html")
+
+    def generate_text(self, output):
+        self.generate_report(output, "check_site_report.txt")
+
+    def generate_report(self, output, template_name):
         from jinja2 import Environment, PackageLoader
         env = Environment(autoescape=True, loader=PackageLoader('webtoolbox', 'templates'))
 
-        template = env.get_template("check_site_report.html")
+        template = env.get_template(template_name)
         output.write(template.render(
             messages=self.messages,
             pages=self.pages,
@@ -85,28 +91,6 @@ class SpiderReport(object):
             severity_levels=self.REPORT_ORDER,
             **self.extra_context
         ))
-
-    def generate_text(self, output):
-        print "%(title)s" % self.extra_context
-        print "Retrieved %(urls_total)d URLs in %(elapsed_time)0.2f seconds with %(urls_error)d errors" % self.extra_context
-
-        for level in self.REPORT_ORDER:
-            if not level in self.messages:
-                continue
-
-            print >> output, "%s:" % self.SEVERITY_LEVELS[level]
-            categories = self.messages[level]
-
-            for category in sorted(categories.keys()):
-                summaries = categories[category]
-                print >> output, "\t%s:" % category
-
-                for summary, data in summaries.items():
-                    print >> output, "\t\t%s: %d pages" % (summary, len(data['urls']))
-                    print >> output, "\t\t\t%s" % "\n\t\t\t".join(sorted(data['urls']))
-                    print >> output
-
-            print >> output
 
 
 class QASpider(Spider):
