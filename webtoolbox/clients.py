@@ -198,12 +198,12 @@ class Spider(Retriever):
 
         super(Spider, self).run()
 
-    def queue(self, url):
+    def queue(self, url, **kwargs):
         """Add a URL to the queue to be retrieved"""
 
         if url not in self.url_history:
             self.url_history.add(url)
-            super(Spider, self).queue(url, request_timeout=60)
+            super(Spider, self).queue(url, **kwargs)
 
     def guess_charset(self, response):
         """
