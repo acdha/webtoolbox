@@ -258,6 +258,8 @@ class Spider(Retriever):
             url = response.headers['Location']
             self.redirect_map[request.url] = url
 
+            assert not url in self.redirect_map or self.redirect_map[url] != request.url, "Circular redirect: %s %s" % (url, self.redirect_map[url])
+
         parsed_url = urlparse(url)
 
         self.site_structure[url].code = response.code
