@@ -210,14 +210,15 @@ def main():
     if not urls:
         parser.error("You must provide at least one URL to start spidering")
 
-    if options.report_format == "html":
-        try:
-            import jinja2
-        except ImportError:
-            logging.critical("You requested an HTML report but Jinja2 could not be imported. Try `pip install jinja2`")
-            sys.exit(42)
+    try:
+        import jinja2
+    except ImportError:
+        logging.critical("You requested an HTML report but Jinja2 could not be imported. Try `pip install jinja2`")
+        sys.exit(42)
 
     if not isinstance(options.report_file, file):
+        if ".htm" in options.report_file and options.report_format != "html":
+            logging.warning("Output file appears to be HTML but format is %s - should it be html?", options.report_format)
         options.report_file = file(options.report_file, "w")
 
     if options.validate_html:
