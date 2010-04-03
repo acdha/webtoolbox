@@ -263,10 +263,10 @@ def main():
     spider.report.save(format=options.report_format, output=options.report_file)
 
     if options.page_list:
-        save_url_list(options.page_list, sorted(spider.pages))
+        save_url_list(options.page_list, sorted(spider.report.pages))
 
     if options.resource_list:
-        save_url_list(options.resource_list, sorted(spider.resources))
+        save_url_list(options.resource_list, sorted(spider.report.resources))
 
 if "__main__" == __name__:
     main()
