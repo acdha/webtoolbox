@@ -82,7 +82,7 @@ class Retriever(object):
         request_args = {
                 "follow_redirects": False,
                 "max_redirects": 5,
-                "request_timeout": 15
+                "request_timeout": self.default_request_timeout
         }
         request_args.update(kwargs)
 
@@ -136,6 +136,9 @@ class Spider(Retriever):
     # servers but you might want to check them for reporting purposes:
     follow_offsite_redirects = False
 
+    #: This is the default time in seconds which we'll wait to receive a response:
+    default_request_timeout = 15
+
     #: All urls processed by this spider as a URL-keyed list of :class:URLStatus elements
     site_structure = defaultdict(URLStatus)
     url_history = set()
@@ -174,9 +177,11 @@ class Spider(Retriever):
 
     redirect_map = {}
 
-    def __init__(self, log_name="Spider", **kwargs):
+    def __init__(self, log_name="Spider", default_request_timeout=15, **kwargs):
         """Create a new Spider, optionally with a custom logging name"""
         super(Spider, self).__init__(**kwargs)
+
+        self.default_request_timeout = default_request_timeout
 
         self.log = logging.getLogger(log_name)
 

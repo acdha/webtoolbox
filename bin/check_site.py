@@ -190,6 +190,7 @@ def main():
     parser = optparse.OptionParser(__doc__.strip())
 
     parser.add_option("--max-connections", type="int", default="2", help="Set the number of simultaneous connections to the remote server(s)")
+    parser.add_option("--timeout", type="int", default="15", help="Set the number of seconds to wait for a request to load")
     parser.add_option("--format", dest="report_format", default="text", help='Generate the report as HTML or text')
     parser.add_option("-o", "--report", "--output", dest="report_file", default=sys.stdout, help='Save report to a file instead of stdout')
     parser.add_option("--follow-offsite-redirects", action="store_true", default=False, help="Follow redirects which lead to outside servers to check for 404s")
@@ -229,7 +230,11 @@ def main():
             logging.critical("Cannot perform HTML validation. Try `pip install pytidylib` or see http://countergram.com/software/pytidylib")
             sys.exit(42)
 
-    spider = QASpider(validate_html=options.validate_html, max_simultaneous_connections=options.max_connections)
+    spider = QASpider(
+        validate_html=options.validate_html,
+        max_simultaneous_connections=options.max_connections,
+        default_request_timeout=options.timeout
+    )
     spider.skip_media = options.skip_media
     spider.skip_resources = options.skip_resources
     spider.follow_offsite_redirects = options.follow_offsite_redirects
