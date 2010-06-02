@@ -15,10 +15,11 @@ Currently checks:
 
 """
 
-from collections import defaultdict
 
+from collections import defaultdict
 import logging
 import optparse
+import os
 import re
 import sys
 import time
@@ -220,7 +221,7 @@ def main():
     if not isinstance(options.report_file, file):
         if ".htm" in options.report_file and options.report_format != "html":
             logging.warning("Output file appears to be HTML but format is %s - should it be html?", options.report_format)
-        options.report_file = file(options.report_file, "w")
+        options.report_file = file(os.path.expanduser(options.report_file), "w")
 
     if options.validate_html:
         try:
