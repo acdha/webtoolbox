@@ -95,21 +95,29 @@ class Retriever(object):
 
     def response_handler(self, response):
         self.processed += 1
-        if response.error:
-            self.errors += 1
-
         self.log.info("Retrieved %s (elapsed=%0.2f, status=%s)", response.request.url, response.request_time, response.code)
 
-        for p in self.response_processors:
-            try:
-                p(response.request, response)
-            except:
-                self.log.exception("Aborting due to unhandled exception in processor %s", p)
-                self.http_client.io_loop.stop()
-                raise
+        try:
+            if response.error and (400 <= response.code <= 600):
+                self.errors += 1
 
-        if self.processed == self.queued:
-            self.http_client.io_loop.stop()
+                url = response.effective_url
+
+                if "Referer" in response.request.headers:
+                    self.log.error("Unable to retrieve %s (referer=%s) HTTP %d:  %s", url, response.request.headers['Referer'], response.code, response.error)
+                else:
+                    self.log.error("Unable to retrieve %s HTTP %d: %s", url, response.code, response.error)
+            else:
+                for p in self.response_processors:
+                    try:
+                        p(response.request, response)
+                    except:
+                        self.log.exception("Aborting due to unhandled exception in processor %s", p)
+                        self.http_client.io_loop.stop()
+                        raise
+        finally:
+            if self.processed == self.queued:
+                self.http_client.io_loop.stop()
 
 
 class Spider(Retriever):
@@ -258,6 +266,11 @@ class Spider(Retriever):
 
         url = response.effective_url
 
+        # These will be used for new requests based on this page's links:
+        new_req_headers = {
+            "Referer": url
+        }
+
         # If follow_redirects=False, our effective_url won't be automatically updated:
         if response.code in (301, 302):
             url = response.headers['Location']
@@ -276,14 +289,11 @@ class Spider(Retriever):
 
         if url != request.url:
             if not parsed_url.netloc or parsed_url.netloc in self.allowed_hosts:
-                self.queue(url)
+                self.queue(url, headers=new_req_headers)
             elif self.follow_offsite_redirects:
-                self.queue(url)
+                self.queue(url, headers=new_req_headers)
             else:
                 self.log.info("Not following external redirect from %s to %s", request.url, url)
-            return
-        elif response.error:
-            self.log.error("Unable to retrieve %s: %d %s", url, response.code, response.error)
             return
 
         assert url == request.url
@@ -341,7 +351,6 @@ class Spider(Retriever):
             tree = lxml.html.html5parser.document_fromstring(html, guess_charset=False)
         except ValueError, e:
             self.log.warning("%s: aborting processing due to lxml parse error: %s", url, e)
-            import code; code.interact(local=dict(locals().items() + globals().items()))
             return
 
         self.log.debug("%s: Processing links", url)
@@ -377,13 +386,13 @@ class Spider(Retriever):
                 continue
 
             if element.tag in ('a', 'frame', 'iframe'):
-                self.queue(normalized_url)
+                self.queue(normalized_url, headers=new_req_headers)
             elif element.tag in ('link', 'script'):
                 if not self.skip_resources:
-                    self.queue(normalized_url)
+                    self.queue(normalized_url, headers=new_req_headers)
             else:
                 if not self.skip_media:
-                    self.queue(normalized_url)
+                    self.queue(normalized_url, headers=new_req_headers)
 
         for p in self.tree_processors:
             try:
