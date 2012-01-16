@@ -26,8 +26,8 @@ setup(name='WebToolbox',
     ],
     requires=[
         'lxml',
-        'pycurl (>=7.16.4)',
-        'tornado',
+        'requests',
+        'gevent',
         'html5lib',
         'chardet'
     ],

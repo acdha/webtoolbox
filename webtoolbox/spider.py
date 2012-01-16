@@ -5,16 +5,21 @@ HTTP clients designed for easy tool building
 
 
 from urlparse import urlparse, urlunparse, urldefrag
-from collections import defaultdict
+from collections import defaultdict, deque
 
 import logging
 import re
 import time
+import sys
 
+try:
+    import ipdb as pdb
+except ImportError:
+    import pdb
+
+from requests import async, session
 import chardet
-import lxml.html.html5parser
-
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+import lxml.html
 
 
 #: Light-weight class used for reporting purposes
@@ -28,99 +33,7 @@ class URLStatus(object):
     links = set()
 
 
-class Retriever(object):
-    """
-    Fast, asynchronous URL retriever
-
-    Usage is simple:
-        1. Create a Retriever, optionally providing a log_name for logging and
-           any of the kwargs accepted by :class:`tornado.httpclient.AsyncHTTPClient`
-
-        2. Add request processor callbacks to retriever.response_processors.
-           Each will be called with args=(request, response)
-
-        3. Load one or more URLs using retriever.queue_urls (your response
-           processors may add more as desired)
-
-        4. Call retriever.run(), which will block until all URLs have been
-           processed
-
-    """
-
-    # We use these to keep track of when we've finished processing all
-    # outstanding requests as there's no actual way to get that using public
-    # methods for AsyncHTTPClient or ioloop:
-    queued = 0
-    processed = 0
-    errors = 0
-
-    http_client = None
-
-    response_processors = list()
-
-    log = None
-
-    def __init__(self, log_name="Retriever", **kwargs):
-        self.http_client = AsyncHTTPClient(**kwargs)
-        self.log = logging.getLogger(log_name)
-
-    @property
-    def completed(self):
-        return self.processed == self.queued
-
-    def run(self):
-        self.log.info("Starting with %d queued URLs", self.queued)
-
-        start_time = time.time()
-        self.http_client.io_loop.start()
-        elapsed = time.time() - start_time
-
-        self.log.info("Completed after processing %d URLs in %0.2f seconds", self.processed, elapsed)
-
-    def queue(self, url, **kwargs):
-        """Queue up a list of URLs to retrieve"""
-        request_args = {
-                "follow_redirects": False,
-                "max_redirects": 5,
-                "request_timeout": self.default_request_timeout
-        }
-        request_args.update(kwargs)
-
-        self.http_client.fetch(
-            HTTPRequest(url, **request_args),
-            self.response_handler
-        )
-
-        self.queued += 1
-
-    def response_handler(self, response):
-        self.processed += 1
-        self.log.info("Retrieved %s (elapsed=%0.2f, status=%s)", response.request.url, response.request_time, response.code)
-
-        try:
-            if response.error and (400 <= response.code <= 600):
-                self.errors += 1
-
-                url = response.effective_url
-
-                if "Referer" in response.request.headers:
-                    self.log.error("Unable to retrieve %s (referer=%s) HTTP %d:  %s", url, response.request.headers['Referer'], response.code, response.error)
-                else:
-                    self.log.error("Unable to retrieve %s HTTP %d: %s", url, response.code, response.error)
-            else:
-                for p in self.response_processors:
-                    try:
-                        p(response.request, response)
-                    except:
-                        self.log.exception("Aborting due to unhandled exception in processor %s", p)
-                        self.http_client.io_loop.stop()
-                        raise
-        finally:
-            if self.processed == self.queued:
-                self.http_client.io_loop.stop()
-
-
-class Spider(Retriever):
+class Spider(object):
     """
     Retriever-based Spider
 
@@ -134,18 +47,22 @@ class Spider(Retriever):
     #: Logger used to report progress & errors
     log = None
 
+    #: Queue containing requests which have not yet been processed:
+    request_queue = deque()
+    response_processors = list()
+
     #: This will be automatically populated from the inital batch of URLs
     # passed to :meth:`run` and will be used to determine whether to follow
     # links or simply record them.
     allowed_hosts = set()
 
+    #: This is the default time in seconds which we'll wait to receive a response:
+    default_request_timeout = 15
+
     #: This flag controls whether we'll follow redirects to pages which are
     # not in allowed_hosts. It defaults to off to avoid hammering third-party
     # servers but you might want to check them for reporting purposes:
     follow_offsite_redirects = False
-
-    #: This is the default time in seconds which we'll wait to receive a response:
-    default_request_timeout = 15
 
     #: All urls processed by this spider as a URL-keyed list of :class:URLStatus elements
     site_structure = defaultdict(URLStatus)
@@ -185,15 +102,34 @@ class Spider(Retriever):
 
     redirect_map = {}
 
-    def __init__(self, log_name="Spider", default_request_timeout=15, **kwargs):
+    def __init__(self, log_name="Spider", debug=False,
+                 default_request_timeout=15,
+                 max_simultaneous_connections=6, **kwargs):
         """Create a new Spider, optionally with a custom logging name"""
         super(Spider, self).__init__(**kwargs)
 
-        self.default_request_timeout = default_request_timeout
-
         self.log = logging.getLogger(log_name)
+        self.debug = debug
 
-        self.response_processors.append(self.process_page)
+        self.queued = 0
+        self.processed = 0
+        self.errors = 0
+
+        self.default_request_timeout = default_request_timeout
+        self.max_simultaneous_connections = max_simultaneous_connections
+
+        self.session = session(headers={"User-Agent": "https://github.com/acdha/webtoolbox"},
+                               config={'keep_alive': True, 'decode_unicode': False},
+                               hooks={'pre_request': self.process_request,
+                                      'response': self.process_response},
+                               timeout=self.default_request_timeout)
+
+        self.response_processors.append(self.process_full_response)
+
+    @property
+    def completed(self):
+        print self.processed, self.queued
+        return self.processed == self.queued
 
     def run(self, urls):
         """
@@ -201,6 +137,7 @@ class Spider(Retriever):
 
         Block until the spider has crawled the entire site
         """
+
         for url in urls:
             parsed_url = urlparse(url)
 
@@ -209,24 +146,35 @@ class Spider(Retriever):
 
             self.queue(url)
 
-        super(Spider, self).run()
+        while self.queued > self.processed:
+            async.map(self.request_queue,
+                      size=self.max_simultaneous_connections)
 
     def queue(self, url, **kwargs):
         """Add a URL to the queue to be retrieved"""
 
-        if url not in self.url_history:
-            self.url_history.add(url)
-            super(Spider, self).queue(url, **kwargs)
+        if url in self.url_history:
+            return
+
+        self.url_history.add(url)
+
+        req = async.get(url, session=self.session,
+                        timeout=kwargs.pop("timeout", self.default_request_timeout),
+                        **kwargs)
+
+        self.request_queue.append(req)
+
+        self.queued += 1
 
     def guess_charset(self, response):
         """
         Does the ugly business of attempting to figure out how to decode the
         response to a unicode string
         """
-        url = response.effective_url
+        url = response.url
 
         # Look for a specific pre-amble:
-        xml_sniff = self.XML_CHARSET_PREAMBLE_RE.match(response.body)
+        xml_sniff = self.XML_CHARSET_PREAMBLE_RE.match(response.content)
 
         if xml_sniff:
             charset = xml_sniff.group("charset")
@@ -243,12 +191,14 @@ class Spider(Retriever):
 
         # TODO: Should this be reported as a warning re:poor server config?
         # Looks like we'll do it the slow way:
-        det = chardet.detect(response.body)
+        det = chardet.detect(response.content)
         self.log.info("%s: processing body as detected charset=%s (confidence=%0.1f)", url, det['encoding'], det['confidence'])
         return det['encoding']
 
+    def process_request(self, request):
+        request.start_time = time.time()
 
-    def process_page(self, request, response):
+    def process_response(self, response):
         """
         Callback used to process a URL after it's been retrieved
 
@@ -261,10 +211,39 @@ class Spider(Retriever):
             #. Convert all links to absolute URLs
             #. Queue any unseen URLs for retrieval
             #. Pass lxml tree to :attr:`tree_processors`
-
         """
 
-        url = response.effective_url
+        self.processed += 1
+
+        request = response.request
+        response.elapsed_time = time.time() - request.start_time
+
+        self.log.info("Retrieved %s (elapsed=%0.2f, status=%s)", request.url,
+                      response.elapsed_time, response.status_code)
+
+        if not response.ok:
+            self.errors += 1
+
+            # TODO: Replace this by passing extra= to logging & formatting appropriately
+            if "Referer" in response.request.headers:
+                self.log.error("Unable to retrieve %s (referer=%s) HTTP %d:  %s", request.url,
+                               response.request.headers['Referer'], response.status_code, response.error)
+            else:
+                self.log.error("Unable to retrieve %s HTTP %d: %s", request.url,
+                               response.status_code, response.error)
+        else:
+            for p in self.response_processors:
+                try:
+                    p(request, response)
+                except Exception as exc:
+                    tb = sys.exc_info()[2]
+                    self.log.error("Error processing response from %s: %s", request.url, exc, exc_info=True)
+
+                    if self.debug:
+                        pdb.post_mortem(tb)
+
+    def process_full_response(self, request, response):
+        url = response.url
 
         # These will be used for new requests based on this page's links:
         new_req_headers = {
@@ -272,7 +251,7 @@ class Spider(Retriever):
         }
 
         # If follow_redirects=False, our effective_url won't be automatically updated:
-        if response.code in (301, 302):
+        if response.status_code in (301, 302):
             url = response.headers['Location']
             self.redirect_map[request.url] = url
 
@@ -280,8 +259,8 @@ class Spider(Retriever):
 
         parsed_url = urlparse(url)
 
-        self.site_structure[url].code = response.code
-        self.site_structure[url].time = response.request_time
+        self.site_structure[url].status_code = response.status_code
+        self.site_structure[url].time = response.elapsed_time
 
         if not parsed_url.scheme == "http":
             self.log.error("Skipping %s: can't handle non HTTP URLs", url)
@@ -303,10 +282,11 @@ class Spider(Retriever):
         # TODO: In theory these should be identical but things like gzip
         # transfer encoding are non-trivial to handle with the information we
         # have visible at this point. We'll look for incomplete responses and
-        # hope that PyCurl does the right thing and raise an error if we get
+        # hope that requests does the right thing and raise an error if we get
         # partial/bogus encoding.
-        if content_length > -1 and len(response.body) < content_length:
-            self.log.warning("%s: possible partial content: Content-Length = %d, body length = %d", url, content_length, len(response.body))
+        if content_length > -1 and len(response.content) < content_length:
+            self.log.warning("%s: possible partial content: Content-Length = %d, body length = %d",
+                             url, content_length, len(response.content))
 
         content_type = response.headers.get('Content-Type', None)
 
@@ -328,11 +308,14 @@ class Spider(Retriever):
 
         charset = self.guess_charset(response) or "latin-1"
 
-        try:
-            html = unicode(response.body, charset)
-        except UnicodeDecodeError, e:
-            self.log.error("%s: skipping page - unable to decode body as %s: %s", url, charset, e)
-            return
+        if isinstance(response.content, unicode):
+            html = response.content
+        else:
+            try:
+                html = unicode(response.content, charset)
+            except UnicodeDecodeError, e:
+                self.log.error("%s: skipping page - unable to decode body as %s: %s", url, charset, e)
+                return
 
         html, junk_count = self.CONTROL_CHAR_RE.subn(' ', html)
         if junk_count:
@@ -348,7 +331,7 @@ class Spider(Retriever):
         self.log.debug("%s: Parsing %d bytes of HTML", url, len(html))
 
         try:
-            tree = lxml.html.html5parser.document_fromstring(html, guess_charset=False)
+            tree = lxml.html.document_fromstring(html)
         except ValueError, e:
             self.log.warning("%s: aborting processing due to lxml parse error: %s", url, e)
             return

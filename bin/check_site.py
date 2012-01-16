@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
-
 """
-Spiders a site looking for problems
+Crawl a site looking for problems
 
 Usage:
 
@@ -12,9 +11,7 @@ Currently checks:
     1. HTML Validation
     2. Bad links (Internal)
     3. Bad links (External)
-
 """
-
 
 from collections import defaultdict
 import logging
@@ -24,10 +21,12 @@ import re
 import sys
 import time
 
-from webtoolbox.clients import Spider
+from webtoolbox.spider import Spider
 
 # Used to process the string report returned by tidylib:
-TIDY_RE = re.compile("line (?P<line>\d+) column (?P<column>\d+) - (?P<level>\w+): (?P<message>.*)$", re.MULTILINE)
+TIDY_RE = re.compile("line (?P<line>\d+) column (?P<column>\d+) - (?P<level>\w+): (?P<message>.*)$",
+                     re.MULTILINE)
+
 
 class SpiderReport(object):
     """Represents information which applies to one or more URLs"""
@@ -37,10 +36,10 @@ class SpiderReport(object):
         "title": "Spider Report"
     }
 
-    messages  = defaultdict(dict)
-    pages     = set()
+    messages = defaultdict(dict)
+    pages = set()
     resources = set()
-    media     = set()
+    media = set()
 
     # Severity levels, used to simplify sorting:
     SEVERITY_LEVELS = {
@@ -190,6 +189,7 @@ def configure_logging(options):
 def main():
     parser = optparse.OptionParser(__doc__.strip())
 
+    parser.add_option("--debug", action="store_true", default=False, help="Interactively debug failures")
     parser.add_option("--max-connections", type="int", default="2", help="Set the number of simultaneous connections to the remote server(s)")
     parser.add_option("--timeout", type="int", default="15", help="Set the number of seconds to wait for a request to load")
     parser.add_option("--format", dest="report_format", default="text", help='Generate the report as HTML or text')
@@ -226,16 +226,15 @@ def main():
     if options.validate_html:
         try:
             import tidylib
-        except ImportError:
-            logging.critical("Couldn't import tidylib: %s")
+        except ImportError as exc:
+            logging.critical("Couldn't import tidylib: %s", exc)
             logging.critical("Cannot perform HTML validation. Try `pip install pytidylib` or see http://countergram.com/software/pytidylib")
             sys.exit(42)
 
-    spider = QASpider(
-        validate_html=options.validate_html,
-        max_simultaneous_connections=options.max_connections,
-        default_request_timeout=options.timeout
-    )
+    spider = QASpider(validate_html=options.validate_html,
+                      max_simultaneous_connections=options.max_connections,
+                      default_request_timeout=options.timeout,
+                      debug=options.debug)
     spider.skip_media = options.skip_media
     spider.skip_resources = options.skip_resources
     spider.follow_offsite_redirects = options.follow_offsite_redirects

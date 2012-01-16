@@ -19,10 +19,6 @@ Now you're ready to install our prerequisites::
 
     pip install -r requirements.pip
 
-*Note:* Tornado uses ``pycurl``, which may or may not install correctly on a
-Mac using a simple ``pip install pycurl``. If you encounter problems follow the
-instructions in the Tornado documentation.
-
 To use the `redbot <http://mnot.github.com/redbot/>`_-based tools. This is
 complicated by the fact that redbot hasn't been turned into an importable
 module yet::
@@ -45,6 +41,35 @@ site URLs for use with load-testing tools like ``http_bench`` or
 
 Run ``check_site.py --help`` to see the available options
 
+log_replay
+----------
+
+If you need to replace webserver log files at something approximating realtime,
+``log_replay`` is your friend. It uses a non-blocking HTTP client to many URLs
+at once and will sleep any time it's too far ahead of the simulated virtual
+time.
+
+Run ``log_replay.py --help`` to see the available options
+
+http_bench
+-------------
+
+Retrieves the provided list of URLs as quickly as possible
+
+Run ``http_bench.py --help`` to see the available options
+
+wk_bench
+--------
+
+Mac OS X-specific tool which uses PyObjC to load pages in WebKit. Takes URLs
+on the command-line or in a separate file and runs through them as quickly as
+possible, measuring the time it takes from beginning the request until the
+browser fires the ``didFinishLoadForFrame`` event, which includes things like
+image loading, Flash, JavaScript, etc. for measuring user-perceptible
+page-load performance.
+
+Run ``wk_bench.py --help`` to see the available options
+
 red_spider
 ----------
 
@@ -64,33 +89,3 @@ well.
 Run ``red_spider.py --help`` to see the available options. Key features
 include the ability to skip media and save lists of URLs for use with tools
 like ``wk_bench`` or ``http_bench``.
-
-log_replay
-----------
-
-If you need to replace webserver log files at something approximating
-realtime, ``log_replay`` is your friend. It uses Tornado's non-blocking HTTP
-client to fetch all of the URLs but will sleep any time it's too far ahead
-of the simulated virtual time.
-
-Run ``log_replay.py --help`` to see the available options
-
-http_bench
--------------
-
-Also uses Tornado's non-blocking HTTP client, this program simply takes a big
-list of URLs and simply retrieves them as quickly as possible.
-
-Run ``http_bench.py --help`` to see the available options
-
-wk_bench
---------
-
-Mac OS X-specific tool which uses PyObjC to load pages in WebKit. Takes URLs
-on the command-line or in a separate file and runs through them as quickly as
-possible, measuring the time it takes from beginning the request until the
-browser fires the ``didFinishLoadForFrame`` event, which includes things like
-image loading, Flash, JavaScript, etc. for measuring user-perceptible
-page-load performance.
-
-Run ``wk_bench.py --help`` to see the available options
