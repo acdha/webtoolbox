@@ -11,8 +11,8 @@ Usage:
 """
 
 
-from red import ResourceExpertDroid
-from link_parse import HTMLLinkParser
+from redbot.droid import ResourceExpertDroid
+from redbot.link_parse import HTMLLinkParser
 
 import os
 import sys
@@ -27,6 +27,11 @@ try:
     import tidylib
 except ImportError:
     pass
+
+try:
+    import bpdb as pdb
+except ImportError:
+    import pdb
 
 
 class HTMLAccumulator(object):
@@ -49,8 +54,8 @@ class HTMLAccumulator(object):
 
 class SpiderReport(object):
     """Represents information which applies to one or more URIs"""
-    messages  = defaultdict(dict)
-    pages     = None
+    messages = defaultdict(dict)
+    pages = None
     resources = None
 
     # Severity levels, used to simplify sorting:
@@ -67,15 +72,15 @@ class SpiderReport(object):
 
     def __init__(self, severity=None, title="", details=""):
         self.severity = severity
-        self.title    = title
-        self.details  = details
+        self.title = title
+        self.details = details
 
     def add(self, uri=None, category=None, severity=None, title=None, details=None):
         if not severity in self.SEVERITY_LEVELS:
             raise ValueError("%s is not a valid severity level" % severity)
 
         # TODO: This is Perlish:
-        tgt  = self.messages.setdefault(severity, {}).setdefault(category, {}).setdefault(title, {})
+        tgt = self.messages.setdefault(severity, {}).setdefault(category, {}).setdefault(title, {})
 
         if not tgt:
             tgt['uris'] = set()
@@ -98,7 +103,8 @@ class SpiderReport(object):
             return """<a href="%s">%s</a>""" % (url, title)
 
         # TODO: Switch to a templating system - but which one?
-        template = open(os.path.join(os.path.dirname(__file__), "..", "webtoolbox", "templates", "red_spider_template.html"))
+        template = open(os.path.join(os.path.dirname(__file__), "..",
+                        "webtoolbox", "templates", "red_spider_template.html"))
 
         for line in template:
             if "GENERATED_CONTENT" in line:
@@ -106,7 +112,8 @@ class SpiderReport(object):
             output.write(line)
 
         for level in self.REPORT_ORDER:
-            if not level in self.messages: continue
+            if not level in self.messages:
+                continue
 
             print >> output, """<h1 id="%s">%s</h1>""" % (level, self.SEVERITY_LEVELS[level])
             categories = self.messages[level]
@@ -136,8 +143,10 @@ class SpiderReport(object):
 
                 print >> output, """</tbody></table>"""
 
-        print >> output, """<h1>All Pages</h1><ul class="uri"><li>%s</li></ul>""" % "</li><li>".join(map(make_link, sorted(self.pages)))
-        print >> output, """<h1>All Resources</h1><ul class="uri"><li>%s</li></ul>""" % "</li><li>".join(map(make_link, sorted(self.resources)))
+        print >> output, """<h1>All Pages</h1><ul class="uri"><li>%s</li></ul>""" \
+                         % "</li><li>".join(map(make_link, sorted(self.pages)))
+        print >> output, """<h1>All Resources</h1><ul class="uri"><li>%s</li></ul>""" \
+                         % "</li><li>".join(map(make_link, sorted(self.resources)))
 
         output.writelines(template)
 
@@ -162,35 +171,38 @@ class SpiderReport(object):
 
 
 class REDSpider(object):
-    pages        = set()
-    resources    = set()
-    tidy_re      = re.compile("line (?P<line>\d+) column (?P<column>\d+) - (?P<level>\w+): (?P<message>.*)$", re.MULTILINE)
-    skip_link_re = re.compile("^$") # URLs which match won't be spidered
+    pages = set()
+    resources = set()
+    tidy_re = re.compile(r"line (?P<line>\d+) column (?P<column>\d+) - (?P<level>\w+): (?P<message>.*)$",
+                         re.MULTILINE)
+
+    #: URLs matching this expression won't be crawled:
+    skip_link_re = re.compile("^$")
 
     def __init__(self, uris, language="en", validate_html=False, skip_media=False, skip_resources=False):
-        self.allowed_hosts  = [urlparse(u)[1] for u in uris]
-        self.language       = language
-        self.skip_media     = skip_media
+        self.allowed_hosts = [urlparse(u)[1] for u in uris]
+        self.language = language
+        self.skip_media = skip_media
         self.skip_resources = skip_resources
-        self.uris           = uris
-        self.validate_html  = validate_html
+        self.uris = uris
+        self.validate_html = validate_html
 
         self.report = SpiderReport()
+
+        self.droid = ResourceExpertDroid(uri, status_cb=logging.debug, body_procs=body_procs)
 
     def run(self):
         for uri in self.uris:
             self.pages.add(uri)
 
             link_parser = HTMLLinkParser(uri, self.process_link)
-            body_procs = [ link_parser.feed ]
+            body_procs = [link_parser.feed]
 
             if self.validate_html:
                 html_body = HTMLAccumulator()
                 body_procs.append(html_body.feed)
 
             logging.debug("Processing page: %s", uri)
-
-            red = ResourceExpertDroid(uri, status_cb=logging.debug, body_procs=body_procs)
 
             for m in red.messages:
                 self.report_red_message(m, uri)
@@ -204,16 +216,16 @@ class REDSpider(object):
                 continue
             elif red.res_status == "200":
                 # We only validate pages which loaded successfully:
-                if red.res_complete and self.validate_html and red.parsed_hdrs['content-type'][0] == 'text/html':
+                if (red.res_complete and self.validate_html
+                    and red.parsed_hdrs['content-type'][0] == 'text/html'):
                     self.report_tidy_messages(uri, html_body.content)
 
-            errs = not red.res_complete or any([ m for m in red.messages if m.level in ['error', 'bad']])
+            errs = not red.res_complete or any([m for m in red.messages if m.level in ['error', 'bad']])
 
             if errs:
                 logging.warn("Found problems in: %s", uri)
             else:
                 logging.info("Processed page: %s", uri)
-
 
         assert len(self.uris) <= len(self.pages)
 
@@ -237,7 +249,7 @@ class REDSpider(object):
     def report_red_message(self, msg, uri):
         """Unpacks a message as returned in ResourceExpertDroid.messages"""
 
-        title   = self.get_loc(msg.summary) % msg.vars
+        title = self.get_loc(msg.summary) % msg.vars
         details = self.get_loc(msg.text) % msg.vars
 
         if title.startswith("The resource last changed"):
@@ -321,17 +333,28 @@ def configure_logging(options):
 def main():
     parser = optparse.OptionParser(__doc__.strip())
 
-    parser.add_option("--format", dest="report_format", default="text", help='Generate the report as HTML or text')
-    parser.add_option("-o", "--report", "--output", dest="report_file", default=sys.stdout, help='Save report to a file instead of stdout')
-    parser.add_option("--validate-html", action="store_true", default=False, help="Validate HTML using tidylib")
-    parser.add_option("--skip-media", action="store_true", default=False, help="Skip media files: <img>, <object>, etc.")
-    parser.add_option("--skip-resources", action="store_true", default=False, help="Skip resources: <script>, <link>")
-    parser.add_option("--skip-link-re", type="string", help="Skip links whose URL matches the specified regular expression")
-    parser.add_option("--save-page-list", dest="page_list", help='Save a list of URLs for HTML pages in the specified file')
-    parser.add_option("--save-resource-list", dest="resource_list", help='Save a list of URLs for pages resources in the specified file')
-    parser.add_option("--language", default="en", help="Report using a different language than '%default'")
-    parser.add_option("-l", "--log", dest="log_file", help='Specify a location other than stderr', default=None)
-    parser.add_option("-v", "--verbosity", action="count", default=0, help="Log level")
+    parser.add_option("--format", dest="report_format", default="text",
+                      help='Generate the report as HTML or text')
+    parser.add_option("-o", "--report", "--output", dest="report_file", default=sys.stdout,
+                      help='Save report to a file instead of stdout')
+    parser.add_option("--validate-html", action="store_true", default=False,
+                      help="Validate HTML using tidylib")
+    parser.add_option("--skip-media", action="store_true", default=False,
+                      help="Skip media files: <img>, <object>, etc.")
+    parser.add_option("--skip-resources", action="store_true", default=False,
+                      help="Skip resources: <script>, <link>")
+    parser.add_option("--skip-link-re", type="string",
+                      help="Skip links whose URL matches the specified regular expression")
+    parser.add_option("--save-page-list", dest="page_list",
+                      help='Save a list of URLs for HTML pages in the specified file')
+    parser.add_option("--save-resource-list", dest="resource_list",
+                      help='Save a list of URLs for pages resources in the specified file')
+    parser.add_option("--language", default="en",
+                      help="Report using a different language than '%default'")
+    parser.add_option("-l", "--log", dest="log_file", default=None,
+                      help='Specify a location other than stderr')
+    parser.add_option("-v", "--verbosity", action="count", default=0,
+                      help="Display more progress information")
 
     (options, uris) = parser.parse_args()
 
@@ -344,15 +367,14 @@ def main():
         options.report_file = file(options.report_file, "w")
 
     if options.validate_html and not "tidylib" in sys.modules:
-        logging.warning("Couldn't import tidylib - HTML validation is disabled. Try installing from PyPI or http://countergram.com/software/pytidylib")
+        logging.warning("Couldn't import tidylib - HTML validation is disabled"
+                        "Try installing from PyPI or http://countergram.com/software/pytidylib")
         options.validate_html = False
 
-
     rs = REDSpider(uris,
-        validate_html=options.validate_html,
-        skip_media=options.skip_media,
-        skip_resources=options.skip_resources,
-    )
+                   validate_html=options.validate_html,
+                   skip_media=options.skip_media,
+                   skip_resources=options.skip_resources)
 
     if options.skip_link_re:
         i = options.skip_link_re
@@ -374,4 +396,7 @@ def main():
         save_uri_list(options.resource_list, sorted(rs.resources))
 
 if "__main__" == __name__:
-    main()
+    try:
+        main()
+    except:
+        pdb.pm()
