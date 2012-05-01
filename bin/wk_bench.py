@@ -86,12 +86,20 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
     times          = []
 
     def webView_didFailLoadWithError_forFrame_(self, webview, error, frame):
-        logging.error("Something went wrong: %s " % error.localizedDescription())
-        self.getNextURL()
+        try:
+            name = frame.dataSource().request().URL()
+        except:
+            name = frame.name()
 
-    def webView_didFailProvisionalLoadWithError_forFrame_(self, webview, error, frame):
-        logging.error("Something went wrong: %s" % error.localizedDescription())
-        self.getNextURL()
+        if frame == webview.mainFrame():
+            logging.error("Unable to load page %s: %s",
+                          name, error.localizedDescription())
+            self.getNextURL()
+        else:
+            logging.warning("Unable to load sub-frame %s: %s",
+                            name, error.localizedDescription())
+
+    webView_didFailProvisionalLoadWithError_forFrame_ = webView_didFailLoadWithError_forFrame_
 
     def getNextURL(self):
         self.current_url = self.urls[self.current_idx]
