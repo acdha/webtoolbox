@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# encoding: utf-8
 # http://gist.github.com/128284
 
 """
@@ -52,6 +53,7 @@ except ImportError, e:
 
 TEST_URL = 'http://www.youtube.com/'
 
+
 class exc_handler(NSObject):
     """
     This exists so we can catch exceptions raised in e.g. WebKit delegates
@@ -61,9 +63,10 @@ class exc_handler(NSObject):
         return False
 
     def exceptionHandler_shouldHandleException_mask_(self, sender, exc, mask):
-        logging.error("Exiting due to exception: %s" % exc.reason())
+        logging.error(u"Exiting due to exception: %s", exc.reason())
         AppKit.NSApplication.sharedApplication().terminate_(None)
         return True
+
 
 class AppDelegate (NSObject):
     def applicationDidFinishLaunching_(self, aNotification):
@@ -77,13 +80,14 @@ class AppDelegate (NSObject):
         delegate.target_webview = webview
         delegate.getNextURL()
 
+
 class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
-    current_url    = None
-    current_idx    = 0
-    request_count  = 0
+    current_url = None
+    current_idx = 0
+    request_count = 0
     target_webview = None
-    start_time     = 0.0
-    times          = []
+    start_time = 0.0
+    times = []
 
     def webView_didFailLoadWithError_forFrame_(self, webview, error, frame):
         try:
@@ -142,7 +146,6 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
 
         self.current_idx = i
 
-
     def webView_didStartProvisionalLoadForFrame_(self, sender, frame):
         logging.debug("Loading started for %s" % self.current_url)
         self.start_time = time.time()
@@ -158,6 +161,7 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
         else:
             logging.debug("Sub-frame loaded")
 
+
 class UIDelegate(NSObject, WebKit.protocols.WebUIDelegate):
     def webView_runJavaScriptAlertPanelWithMessage_initiatedByFrame_(self, webview, message, frame):
         logging.error("JavaScript alert: %s" % message)
@@ -172,9 +176,12 @@ class UIDelegate(NSObject, WebKit.protocols.WebUIDelegate):
 def main():
     cmdparser = optparse.OptionParser(__doc__.strip(), version="wk_bench %s" % __version__)
     cmdparser.add_option("--debug", action="store_true", help="Display more progress information")
-    cmdparser.add_option("-u", "--url_list", help="Specify a list of URLs in a file rather than on the command-line")
-    cmdparser.add_option("--requests", dest="max_requests", type="int", default=0, help="How many requests to make")
-    cmdparser.add_option("--random", action="store_true", default=False, help="Pick URL randomly rather than in-order")
+    cmdparser.add_option("-u", "--url_list",
+                         help="Specify a list of URLs in a file rather than on the command-line")
+    cmdparser.add_option("--max-requests", type="int", default=0,
+                         help="How many requests to make")
+    cmdparser.add_option("--random", action="store_true", default=False,
+                         help="Pick URL randomly rather than in-order")
     (options, url_list) = cmdparser.parse_args()
 
     if options.url_list:
@@ -184,22 +191,21 @@ def main():
         cmdparser.print_usage()
         sys.exit(1)
 
-    logging.basicConfig(
-        format = "%(asctime)s [%(levelname)s]: %(message)s",
-        level  = logging.DEBUG if options.debug else logging.INFO
-    )
+    logging.basicConfig(format="%(asctime)s [%(levelname)s]: %(message)s",
+                        level=logging.DEBUG if options.debug else logging.INFO)
 
     if not options.max_requests:
         options.max_requests = len(url_list)
 
     if options.max_requests < len(url_list):
-        logging.warn("Making only %d requests even though you provided %d URLs" % (options.max_requests, len(url_list)))
+        logging.warn("request limit %d is smaller than the provided %d URLs",
+                     options.max_requests, len(url_list))
 
     # Insert a URL which will be used to get all of the actual WebKit
     # initialization out of the way before we load the test sites
     url_list.insert(0, TEST_URL)
 
-    app = AppKit.NSApplication.sharedApplication()
+    AppKit.NSApplication.sharedApplication()
 
     # create an app delegate
     delegate = AppDelegate.alloc().init()
@@ -208,7 +214,7 @@ def main():
     # create a window
     rect = NSMakeRect(0, 0, 1024, 768)
     win = AppKit.NSWindow.alloc()
-    win.initWithContentRect_styleMask_backing_defer_ (rect, AppKit.NSBorderlessWindowMask, 2, 0)
+    win.initWithContentRect_styleMask_backing_defer_(rect, AppKit.NSBorderlessWindowMask, 2, 0)
 
     if options.debug:
         win.orderFrontRegardless()
@@ -242,6 +248,5 @@ def main():
 
     AppHelper.runEventLoop(installInterrupt=True)
 
-if __name__ == '__main__' :
+if __name__ == '__main__':
     main()
-
