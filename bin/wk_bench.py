@@ -42,7 +42,7 @@ import time
 
 try:
     from ExceptionHandling import NSExceptionHandler, NSLogAndHandleEveryExceptionMask
-    from Foundation import NSObject, NSURL, NSURLRequest, NSMakeRect
+    from Foundation import NSObject, NSURL, NSURLRequest, NSMakeRect, NSURLErrorCancelled
     from PyObjCTools import AppHelper
     import AppKit
     import WebKit
@@ -92,12 +92,15 @@ class WebkitLoad (NSObject, WebKit.protocols.WebFrameLoadDelegate):
             name = frame.name()
 
         if frame == webview.mainFrame():
-            logging.error("Unable to load page %s: %s",
+            logging.error(u"Unable to load page %s: %s",
                           name, error.localizedDescription())
             self.getNextURL()
         else:
-            logging.warning("Unable to load sub-frame %s: %s",
-                            name, error.localizedDescription())
+            if error.code() == NSURLErrorCancelled:
+                logging.warning(u"Asynchronous load of %s was cancelled", name)
+            else:
+                logging.warning(u"Unable to load sub-frame %s: %s",
+                                name, error.localizedDescription())
 
     webView_didFailProvisionalLoadWithError_forFrame_ = webView_didFailLoadWithError_forFrame_
 
